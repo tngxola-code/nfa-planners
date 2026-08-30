@@ -1,0 +1,42 @@
+name: AI Review
+
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - ready_for_review
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  architecture-review:
+    name: review/architecture
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Reviewer #1 configuration
+        run: |
+          echo "AI Reviewer #1 - Principal Architecture & Engineering"
+          echo "Instructions: .github/reviewers/architecture.md"
+          echo "Model provider integration pending."
+
+  security-quality-review:
+    name: review/security-quality
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Reviewer #2 configuration
+        run: |
+          echo "AI Reviewer #2 - Security, Quality, Accessibility & UX"
+          echo "Instructions: .github/reviewers/security-quality.md"
+          echo "Model provider integration pending."
