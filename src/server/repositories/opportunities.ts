@@ -19,7 +19,7 @@ import type {
   Opportunity,
   OpportunityCategory,
   OpportunityStatus,
-} from "../../lib/ocds/types";
+} from "@/lib/ocds/types";
 
 import { resolveDataDir, type DataDirOptions } from "../paths";
 import { readJsonFile, updateJsonFile } from "../store/fileStore";

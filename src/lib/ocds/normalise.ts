@@ -1,5 +1,5 @@
 /**
- * Normalizer: maps eTenders OCDS releases onto the internal Opportunity
+ * Normaliser: maps eTenders OCDS releases onto the internal Opportunity
  * domain model.
  *
  * Releases are dropped (return null) when they:
@@ -19,7 +19,7 @@ import type {
 
 /**
  * Category keyword map. Checked against the OCDS classification scheme and
- * the title/description text; the first match wins.
+ * the title/description text; first match wins.
  */
 const CATEGORY_KEYWORDS: Array<{ category: OpportunityCategory; keywords: string[] }> = [
   {
@@ -77,7 +77,6 @@ function dedupHash(parts: {
  * Normalise one OCDS release into an Opportunity, or return null when the
  * release should be dropped.
  *
- * @param release
  * @param now injectable clock for deterministic tests.
  */
 export function normaliseRelease(
