@@ -1,38 +1,27 @@
-/**
- * Console route protection.
- *
- * Runs on the Edge runtime: only edge-safe modules may be imported here
- * (jose-based session verification is fine; bcryptjs/node-only modules are
- * not — those stay in src/server/auth/credentials.ts, out of this graph).
- */
+import { NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
 
-import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
+export function middleware(request: NextRequest) {
+  const path = request.nextUrl.pathname
 
-import { SESSION_COOKIE_NAME } from "./server/auth/config";
-import { verifySessionToken } from "./server/auth/session";
+  // Public paths (no auth required)
+  const publicPaths = ['/login', '/_next', '/favicon.ico']
+  if (publicPaths.some(p => path.startsWith(p))) {
+    return NextResponse.next()
+  }
+
+  // Check for session cookie
+  const session = request.cookies.get('nfa_session')
+  if (!session || session.value !== 'authenticated') {
+    // Redirect to login
+    const loginUrl = new URL('/login', request.url)
+    loginUrl.searchParams.set('returnTo', path)
+    return NextResponse.redirect(loginUrl)
+  }
+
+  return NextResponse.next()
+}
 
 export const config = {
-  matcher: ["/console/:path*"],
-};
-
-export default async function middleware(
-  request: NextRequest,
-): Promise<NextResponse> {
-  const { pathname, search } = request.nextUrl;
-
-  // The login page itself must remain reachable.
-  if (pathname === "/console/login") {
-    return NextResponse.next();
-  }
-
-  const token = request.cookies.get(SESSION_COOKIE_NAME)?.value;
-  const session = token ? await verifySessionToken(token) : null;
-  if (session) {
-    return NextResponse.next();
-  }
-
-  const loginUrl = new URL("/console/login", request.url);
-  loginUrl.searchParams.set("returnTo", `${pathname}${search}`);
-  return NextResponse.redirect(loginUrl);
+  matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)'],
 }

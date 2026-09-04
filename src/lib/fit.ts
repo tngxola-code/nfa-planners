@@ -4,14 +4,24 @@
  * Scores a tender against NFA's capability profile using weighted keyword
  * matching. Pure and offline: no I/O, no randomness, no clock access, so it
  * is trivially unit-testable.
+ *
+ * Expanded to cover all NFA service areas.
  */
 
-/** NFA's core capability profile. */
+/** NFA's core capability profile – aligned with the 16-capability model. */
 export const NFA_CAPABILITIES = [
   "Town and Regional Planning",
-  "Land Surveying",
-  "GIS / Geospatial Intelligence",
+  "Spatial Planning",
+  "Land Surveying and Geomatics",
+  "GIS and Geospatial Intelligence",
+  "Township Establishment",
+  "Human Settlements",
+  "Development Planning and IDP",
+  "Land Audits and Advisory",
   "Infrastructure Planning",
+  "Project Management",
+  "Policy and Public Participation",
+  "Environmental and Resilience",
 ] as const;
 
 export type NfaCapability = (typeof NFA_CAPABILITIES)[number];
@@ -61,32 +71,101 @@ const CAPABILITY_RULES: CapabilityRule[] = [
     ],
   },
   {
-    capability: "Land Surveying",
+    capability: "Spatial Planning",
+    keywords: [
+      "spatial planning",
+      "spatial development framework",
+      "sdf",
+      "precinct plan",
+      "nodal development",
+      "land use management",
+      "land use scheme",
+      "wall-to-wall scheme",
+    ],
+  },
+  {
+    capability: "Land Surveying and Geomatics",
     keywords: [
       "land surveying",
       "land surveyor",
       "cadastral",
-      "cadastre",
-      "surveying",
-      "surveyor",
-      "topographic survey",
-      "boundary survey",
       "geomatics",
-      "site survey",
+      "topographic survey",
+      "pegging",
+      "beacon",
+      "sectional title survey",
+      "general plan",
     ],
   },
   {
-    capability: "GIS / Geospatial Intelligence",
+    capability: "GIS and Geospatial Intelligence",
     keywords: [
       "gis",
-      "geographic information",
+      "geographic information system",
       "geospatial",
       "spatial data",
-      "spatial planning",
-      "spatial development framework",
-      "mapping",
+      "aerial photography",
+      "orthophoto",
+      "lidar",
       "remote sensing",
-      "aerial imagery",
+      "digital mapping",
+      "data capturing of properties",
+    ],
+  },
+  {
+    capability: "Township Establishment",
+    keywords: [
+      "township establishment",
+      "township register",
+      "subdivision",
+      "consolidation",
+      "rezoning",
+      "land use application",
+      "spluma",
+      "removal of restrictive conditions",
+      "street closure",
+      "servitude",
+    ],
+  },
+  {
+    capability: "Human Settlements",
+    keywords: [
+      "human settlement",
+      "informal settlement",
+      "upgrading of informal settlements",
+      "uisp",
+      "housing sector plan",
+      "settlement upgrading",
+      "in-situ upgrading",
+      "title deed",
+      "security of tenure",
+    ],
+  },
+  {
+    capability: "Development Planning and IDP",
+    keywords: [
+      "integrated development plan",
+      "idp",
+      "development framework",
+      "local economic development",
+      "growth and development strategy",
+      "small town regeneration",
+      "small town rehabilitation",
+      "rural development",
+    ],
+  },
+  {
+    capability: "Land Audits and Advisory",
+    keywords: [
+      "land audit",
+      "land availability",
+      "land release",
+      "state land",
+      "due diligence",
+      "highest and best use",
+      "feasibility study",
+      "land assembly",
+      "property portfolio",
     ],
   },
   {
@@ -96,14 +175,44 @@ const CAPABILITY_RULES: CapabilityRule[] = [
       "infrastructure development",
       "bulk infrastructure",
       "bulk services",
-      "infrastructure",
       "stormwater",
       "sanitation",
       "water services",
       "roads",
       "electrification",
-      "human settlements",
       "housing",
+    ],
+  },
+  {
+    capability: "Project Management",
+    keywords: [
+      "programme management",
+      "project management",
+      "professional service provider",
+      "panel of consultants",
+      "panel of professional",
+      "built environment professionals",
+    ],
+  },
+  {
+    capability: "Policy and Public Participation",
+    keywords: [
+      "policy development",
+      "policy review",
+      "public participation",
+      "stakeholder engagement",
+      "by-law",
+      "sector plan",
+    ],
+  },
+  {
+    capability: "Environmental and Resilience",
+    keywords: [
+      "environmental planning",
+      "climate resilience",
+      "flood risk",
+      "disaster management",
+      "green infrastructure",
     ],
   },
 ];
@@ -127,6 +236,7 @@ const GOVERNMENT_CLIENT_PATTERNS = [
   "state",
 ];
 
+/** Location patterns for Eastern Cape and National. */
 const EASTERN_CAPE_PATTERNS = [
   "eastern cape",
   "east london",

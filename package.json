@@ -9,7 +9,10 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "test:smoke": "node scripts/smoke/run.mjs"
+    "test:smoke": "node scripts/smoke/run.mjs",
+    "ingest": "npx tsx scripts/ingest.ts",
+    "ingest:dry": "npx tsx scripts/ingest.ts --dry-run",
+    "ingest:backfill": "npx tsx scripts/ingest.ts --lookback 30"
   },
   "dependencies": {
     "bcryptjs": "3.0.3",
