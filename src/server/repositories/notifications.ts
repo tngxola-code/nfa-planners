@@ -5,7 +5,7 @@
  *
  * Storage layout: a flat JSON array of NotificationRecord entries, appended
  * as digest emails are attempted. `dedupKey` carries the opportunity's
- * stable content hash, so "have we already emailed about this opportunity?"
+ * stable content hash so "have we already emailed about this opportunity?"
  * survives re-ingestion (which refreshes the opportunity id).
  *
  * NOTE: relative imports only in src/server — the offline smoke loader
@@ -24,7 +24,7 @@ export type NotificationStatus = "sent" | "failed" | "pending";
 
 export interface NotificationRecord {
   id: string;
-  /** Opportunity id at sent time (may change across re-ingestions). */
+  /** Opportunity id at send time (may change across re-ingestions). */
   opportunityId: string;
   /** Buyer-side reference, for display/debugging. */
   reference: string;

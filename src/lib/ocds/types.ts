@@ -257,8 +257,7 @@ export function isOpportunity(value: unknown): value is Opportunity {
     !optionalString(value.estimatedValue) ||
     !optionalString(value.contactEmail) ||
     !optionalString(value.contactPhone) ||
-    !optionalString(value.fitReason) ||
-    !optionalString(value.notifiedAt)
+    !optionalString(value.fitReason)
   ) {
     return false;
   }
