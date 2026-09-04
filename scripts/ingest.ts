@@ -1,42 +1,31 @@
-/**
- * Minimal ingest test – fetches releases, scores them, and prints top matches.
- * No persistence, no email.
- * Run: npm run ingest:dry
- */
-
-import { fetchReleases } from "../src/lib/ocds/client";
-import { toOpportunities } from "../src/lib/ocds/normalise";
-import { STORE_THRESHOLD } from "../src/lib/fit";
+import { fetchOcdsReleases } from '../src/lib/ocds/client';
+import { normaliseRelease } from '../src/lib/ocds/normalise';
+import { upsertOpportunities } from '../src/server/repositories/opportunities';
+import type { Opportunity } from '../src/lib/ocds/types';
 
 async function main() {
-  const now = new Date();
-  const dateTo = now.toISOString().slice(0, 10);
-  const dateFrom = new Date(now.getTime() - 3 * 86400000).toISOString().slice(0, 10);
+  // Optionally override dateFrom/dateTo via env or command line
+  const dateFrom = process.env.INGEST_DATE_FROM || undefined;
+  const dateTo = process.env.INGEST_DATE_TO || undefined;
 
-  console.log(`[ingest] window ${dateFrom} -> ${dateTo}`);
+  console.log(`[ingest] fetching releases (dateFrom: ${dateFrom ?? 'default 90 days ago'}, dateTo: ${dateTo ?? 'today'})`);
 
   try {
-    const releases = await fetchReleases({ dateFrom, dateTo, pageSize: 50 });
-    console.log(`[ingest] ${releases.length} releases returned`);
+    const releases = await fetchOcdsReleases({ dateFrom, dateTo, limit: 100 });
+    console.log(`[ingest] fetched ${releases.length} releases`);
 
-    const opportunities = toOpportunities(releases, { now, minScore: STORE_THRESHOLD });
-    console.log(`[ingest] ${opportunities.length} opportunities scored above ${STORE_THRESHOLD}`);
+    const opportunities = releases
+      .map(r => normaliseRelease(r))
+      .filter((o): o is Opportunity => o !== null);
 
-    // Sort by fitScore descending and show top 10
-    const sorted = [...opportunities].sort((a, b) => b.fitScore - a.fitScore);
-    console.log("\n--- Top 10 matches ---");
-    if (sorted.length === 0) {
-      console.log("No opportunities scored above threshold.");
-    } else {
-      sorted.slice(0, 10).forEach((opp, i) => {
-        console.log(`${i+1}. [${opp.fitScore}%] ${opp.reference} – ${opp.title}`);
-        console.log(`   ${opp.fitReason || "N/A"}`);
-      });
-    }
+    console.log(`[ingest] normalised ${opportunities.length} opportunities`);
+
+    const { inserted, updated } = await upsertOpportunities(opportunities);
+    console.log(`[ingest] inserted ${inserted}, updated ${updated}`);
   } catch (err) {
-    console.error("Ingest failed:", err);
+    console.error('Ingest failed:', err);
     process.exit(1);
   }
 }
 
-main();
+main().catch(console.error);
