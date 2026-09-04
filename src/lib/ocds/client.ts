@@ -1,7 +1,7 @@
 /**
  * eTenders OCDS API client.
  *
- * Server-side only. The client is never invoked at the module top level; call
+ * Server-side only. The client is never invoked at module top level; call
  * `fetchOcdsReleases` from an ingestion job or route handler.
  */
 
@@ -20,6 +20,10 @@ export interface FetchOcdsReleasesOptions {
   timeoutMs?: number;
   /** Injected fetch implementation (defaults to globalThis.fetch). */
   fetchImpl?: typeof fetch;
+  /** ISO date string (YYYY-MM-DD) for start of window. Defaults to 90 days ago. */
+  dateFrom?: string;
+  /** ISO date string (YYYY-MM-DD) for end of window. Defaults to today. */
+  dateTo?: string;
 }
 
 /**
@@ -41,8 +45,16 @@ export async function fetchOcdsReleases(
     throw new Error("OCDS client: no fetch implementation available in this runtime");
   }
 
-  const url = new URL("/releases", baseUrl);
-  url.searchParams.set("limit", String(limit));
+  // Build date window – default to last 90 days
+  const now = new Date();
+  const defaultFrom = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+  const dateFrom = options.dateFrom ?? defaultFrom.toISOString().split('T')[0];
+  const dateTo = options.dateTo ?? now.toISOString().split('T')[0];
+
+  const url = new URL("/api/OCDSReleases", baseUrl);
+  url.searchParams.set("dateFrom", dateFrom);
+  url.searchParams.set("dateTo", dateTo);
+  url.searchParams.set("PageSize", String(limit));
 
   let response: Response;
   try {
