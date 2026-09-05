@@ -293,7 +293,7 @@ test("normalise: hash is stable across runs", async () => {
 test("client: fetchOcdsReleases returns releases from an injected fetch", async () => {
   const { fetchOcdsReleases } = await lib("src/lib/ocds/client.ts");
   const fakeFetch = async (url) => {
-    assert.match(String(url), /https:\/\/ocds\.example\.test\/api\/OCDSReleases\?.*PageSize=5/);
+    assert.match(String(url), /^https:\/\/ocds\.example\.test\/releases\?limit=5$/);
     return new Response(JSON.stringify({ releases: [fixtureRelease()] }), {
       status: 200,
       headers: { "content-type": "application/json" },

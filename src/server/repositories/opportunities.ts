@@ -7,7 +7,7 @@
  * deduplicated by their stable `hash` (sha256 of
  * reference|title|client|closingDate, computed during normalisation).
  *
- * All functions accept an optional `{ dataDir }` (or honour NFA_DATA_DIR) so
+ * All functions accept an optional `{ dataDir }` (or honour NFA_DATA_DIR), so
  * smoke tests can run against a temp directory without touching real data.
  */
 
@@ -169,6 +169,9 @@ export async function upsertOpportunities(
           ...incoming,
           id: existing.id,
           ingestedAt: existing.ingestedAt,
+          // A sent notification survives content updates: the dedup hash is
+          // unchanged, so the opportunity must not be re-emailed.
+          notifiedAt: existing.notifiedAt,
         };
         byHash.set(incoming.hash, next);
         merged[merged.indexOf(existing)] = next;
@@ -180,6 +183,30 @@ export async function upsertOpportunities(
   );
 
   return counts;
+}
+
+/**
+ * Mark opportunities (by stable hash) as included in a sent digest email.
+ * Returns the number of records updated.
+ */
+export async function markNotified(
+  hashes: string[],
+  notifiedAt: string = new Date().toISOString(),
+  options?: DataDirOptions,
+): Promise<number> {
+  if (hashes.length === 0) return 0;
+  const wanted = new Set(hashes);
+  let marked = 0;
+
+  await updateJsonFile<Opportunity[]>(opportunitiesPath(options), [], (current) =>
+    current.map((opp) => {
+      if (!wanted.has(opp.hash)) return opp;
+      marked += 1;
+      return { ...opp, notifiedAt };
+    }),
+  );
+
+  return marked;
 }
 
 // ---------------------------------------------------------------------------
