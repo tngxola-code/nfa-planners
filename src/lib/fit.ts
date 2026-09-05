@@ -4,24 +4,14 @@
  * Scores a tender against NFA's capability profile using weighted keyword
  * matching. Pure and offline: no I/O, no randomness, no clock access, so it
  * is trivially unit-testable.
- *
- * Expanded to cover all NFA service areas.
  */
 
-/** NFA's core capability profile – aligned with the 16-capability model. */
+/** NFA's core capability profile. */
 export const NFA_CAPABILITIES = [
   "Town and Regional Planning",
-  "Spatial Planning",
-  "Land Surveying and Geomatics",
-  "GIS and Geospatial Intelligence",
-  "Township Establishment",
-  "Human Settlements",
-  "Development Planning and IDP",
-  "Land Audits and Advisory",
+  "Land Surveying",
+  "GIS / Geospatial Intelligence",
   "Infrastructure Planning",
-  "Project Management",
-  "Policy and Public Participation",
-  "Environmental and Resilience",
 ] as const;
 
 export type NfaCapability = (typeof NFA_CAPABILITIES)[number];
@@ -71,101 +61,32 @@ const CAPABILITY_RULES: CapabilityRule[] = [
     ],
   },
   {
-    capability: "Spatial Planning",
-    keywords: [
-      "spatial planning",
-      "spatial development framework",
-      "sdf",
-      "precinct plan",
-      "nodal development",
-      "land use management",
-      "land use scheme",
-      "wall-to-wall scheme",
-    ],
-  },
-  {
-    capability: "Land Surveying and Geomatics",
+    capability: "Land Surveying",
     keywords: [
       "land surveying",
       "land surveyor",
       "cadastral",
-      "geomatics",
+      "cadastre",
+      "surveying",
+      "surveyor",
       "topographic survey",
-      "pegging",
-      "beacon",
-      "sectional title survey",
-      "general plan",
+      "boundary survey",
+      "geomatics",
+      "site survey",
     ],
   },
   {
-    capability: "GIS and Geospatial Intelligence",
+    capability: "GIS / Geospatial Intelligence",
     keywords: [
       "gis",
-      "geographic information system",
+      "geographic information",
       "geospatial",
       "spatial data",
-      "aerial photography",
-      "orthophoto",
-      "lidar",
+      "spatial planning",
+      "spatial development framework",
+      "mapping",
       "remote sensing",
-      "digital mapping",
-      "data capturing of properties",
-    ],
-  },
-  {
-    capability: "Township Establishment",
-    keywords: [
-      "township establishment",
-      "township register",
-      "subdivision",
-      "consolidation",
-      "rezoning",
-      "land use application",
-      "spluma",
-      "removal of restrictive conditions",
-      "street closure",
-      "servitude",
-    ],
-  },
-  {
-    capability: "Human Settlements",
-    keywords: [
-      "human settlement",
-      "informal settlement",
-      "upgrading of informal settlements",
-      "uisp",
-      "housing sector plan",
-      "settlement upgrading",
-      "in-situ upgrading",
-      "title deed",
-      "security of tenure",
-    ],
-  },
-  {
-    capability: "Development Planning and IDP",
-    keywords: [
-      "integrated development plan",
-      "idp",
-      "development framework",
-      "local economic development",
-      "growth and development strategy",
-      "small town regeneration",
-      "small town rehabilitation",
-      "rural development",
-    ],
-  },
-  {
-    capability: "Land Audits and Advisory",
-    keywords: [
-      "land audit",
-      "land availability",
-      "land release",
-      "state land",
-      "due diligence",
-      "highest and best use",
-      "feasibility study",
-      "land assembly",
-      "property portfolio",
+      "aerial imagery",
     ],
   },
   {
@@ -175,44 +96,14 @@ const CAPABILITY_RULES: CapabilityRule[] = [
       "infrastructure development",
       "bulk infrastructure",
       "bulk services",
+      "infrastructure",
       "stormwater",
       "sanitation",
       "water services",
       "roads",
       "electrification",
+      "human settlements",
       "housing",
-    ],
-  },
-  {
-    capability: "Project Management",
-    keywords: [
-      "programme management",
-      "project management",
-      "professional service provider",
-      "panel of consultants",
-      "panel of professional",
-      "built environment professionals",
-    ],
-  },
-  {
-    capability: "Policy and Public Participation",
-    keywords: [
-      "policy development",
-      "policy review",
-      "public participation",
-      "stakeholder engagement",
-      "by-law",
-      "sector plan",
-    ],
-  },
-  {
-    capability: "Environmental and Resilience",
-    keywords: [
-      "environmental planning",
-      "climate resilience",
-      "flood risk",
-      "disaster management",
-      "green infrastructure",
     ],
   },
 ];
@@ -236,7 +127,6 @@ const GOVERNMENT_CLIENT_PATTERNS = [
   "state",
 ];
 
-/** Location patterns for Eastern Cape and National. */
 const EASTERN_CAPE_PATTERNS = [
   "eastern cape",
   "east london",
@@ -309,22 +199,25 @@ export function scoreFit(input: FitInput): FitResult {
     }
   }
 
-  // Government / institutional client bonus: check the client field first,
-  // fall back to the title (buyers are often named in the title only).
-  const clientHaystack = `${client} ${title}`;
-  if (GOVERNMENT_CLIENT_PATTERNS.some((pattern) => containsKeyword(clientHaystack, pattern))) {
-    score += GOVERNMENT_CLIENT_BONUS;
-    reasonParts.push(`government/institutional client +${GOVERNMENT_CLIENT_BONUS}`);
-  }
+  // Only add client/location bonuses if at least one capability matched.
+  if (matchedCapabilities.length > 0) {
+    // Government / institutional client bonus: check the client field first,
+    // fall back to the title (buyers are often named in the title only).
+    const clientHaystack = `${client} ${title}`;
+    if (GOVERNMENT_CLIENT_PATTERNS.some((pattern) => containsKeyword(clientHaystack, pattern))) {
+      score += GOVERNMENT_CLIENT_BONUS;
+      reasonParts.push(`government/institutional client +${GOVERNMENT_CLIENT_BONUS}`);
+    }
 
-  // Location bonus: Eastern Cape presence outweighs a generic national one.
-  const locationHaystack = `${location} ${title} ${description}`;
-  if (EASTERN_CAPE_PATTERNS.some((pattern) => containsKeyword(locationHaystack, pattern))) {
-    score += EASTERN_CAPE_BONUS;
-    reasonParts.push(`Eastern Cape location +${EASTERN_CAPE_BONUS}`);
-  } else if (NATIONAL_PATTERNS.some((pattern) => containsKeyword(locationHaystack, pattern))) {
-    score += NATIONAL_BONUS;
-    reasonParts.push(`national location +${NATIONAL_BONUS}`);
+    // Location bonus: Eastern Cape presence outweighs a generic national one.
+    const locationHaystack = `${location} ${title} ${description}`;
+    if (EASTERN_CAPE_PATTERNS.some((pattern) => containsKeyword(locationHaystack, pattern))) {
+      score += EASTERN_CAPE_BONUS;
+      reasonParts.push(`Eastern Cape location +${EASTERN_CAPE_BONUS}`);
+    } else if (NATIONAL_PATTERNS.some((pattern) => containsKeyword(locationHaystack, pattern))) {
+      score += NATIONAL_BONUS;
+      reasonParts.push(`national location +${NATIONAL_BONUS}`);
+    }
   }
 
   const clamped = Math.max(0, Math.min(100, score));
