@@ -1,16 +1,16 @@
-# NFA Planners — Opportunity-Intelligence Console
+# NFA Planners - Opportunity-Intelligence Console
 
 Internal console for NFA Planners that turns South African public tender data into
 actionable opportunities:
 
-- **OCDS eTenders ingestion** — pulls releases from the eTenders OCDS API
+- **OCDS eTenders ingestion** - pulls releases from the eTenders OCDS API
   (`ETENDERS_OCDS_BASE_URL`, defaults to `https://ocds-api.etenders.gov.za`) and
   normalises them into an internal opportunity model.
-- **Capability matching** — scores each opportunity against NFA's capability
+- **Capability matching** - scores each opportunity against NFA's capability
   categories (Town Planning, Spatial Planning, GIS, Surveying, Infrastructure,
   Human Settlements) so low-fit releases are dropped early.
-- **Email digests** — sends matching-opportunity digests via [Resend](https://resend.com).
-- **Console UI** — protected internal console (single env-configured user) with a
+- **Email digests** - sends matching-opportunity digests via [Resend](https://resend.com).
+- **Console UI** - protected internal console (single env-configured user) with a
   dashboard, opportunity list/detail views, and a notification centre.
 
 ## Tech stack
@@ -23,7 +23,7 @@ repo root. Persistence is JSON files under `data/` (no database).
 `data/opportunities.json` and `data/notifications.json` are committed as empty
 arrays so fresh clones work out of the box, and are then **mutated at runtime**
 by the ingest/notification pipeline (atomic tmp-file + rename writes, serialised
-in-process). Treat local diffs to `data/*.json` as runtime state, not source —
+in-process). Treat local diffs to `data/*.json` as runtime state, not source -
 don't commit them unless you intend to seed data. This is a deliberate
 single-user choice; Postgres replaces it once a second user or a console write
 path exists. Set `NFA_DATA_DIR` to point the repositories at another directory
