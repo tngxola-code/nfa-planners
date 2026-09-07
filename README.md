@@ -49,6 +49,16 @@ The root path redirects to `/console` (auth + console shell land in later PRs).
 | `npm run lint` | `next lint` (eslint `next/core-web-vitals`) |
 | `npm run typecheck` | `tsc --noEmit` |
 | `npm run test:smoke` | Dependency-light offline smoke tests (`scripts/smoke/`) |
+| `npm run ingest` | Run the ingest pipeline once and print the JSON report (`-- --notify` to also send the digest) |
+
+## Scheduling
+
+`vercel.json` registers a Vercel cron that calls `GET /api/cron/ingest` twice
+daily (06:00 and 18:00 SAST = 04:00/16:00 UTC, `0 4,16 * * *`). The route
+requires `Authorization: Bearer $CRON_SECRET` (Vercel attaches this
+automatically when `CRON_SECRET` is set) and runs ingestion with digest
+notifications enabled. The runner never exits non-zero for source failures —
+failures are reported in the `errors` array of the returned `IngestReport`.
 
 ## Environment
 

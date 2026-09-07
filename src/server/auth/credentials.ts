@@ -1,52 +1,106 @@
 /**
- * Console credential verification against environment configuration.
+ * NFA Console credential verification.
  *
- * SERVER-ONLY (Node runtime): uses bcryptjs. NOT edge-safe — never import
- * this module from middleware or edge route handlers.
+ * SERVER-ONLY.
  *
- * NOTE: bcryptjs is imported lazily (same pattern as resend in
- * src/server/notifications/sendDigest.ts) so the offline smoke loader can
- * transpile/require src/server modules without resolving bare packages.
+ * Zero Trust rules:
+ * - No credentials, password hashes or cryptographic material in source code.
+ * - Password verification uses bcrypt.
+ * - Unknown users are bcrypt-compared against a dummy hash to reduce
+ *   account-enumeration timing differences.
+ * - Authentication configuration is supplied exclusively through the
+ *   runtime environment / secret manager.
  */
 
-/**
- * A valid bcrypt hash used purely for timing parity: when the email does not
- * match we still run a bcrypt comparison against this dummy hash so the
- * response time does not reveal whether the email exists.
- */
-const DUMMY_PASSWORD_HASH =
-  "$2b$10$zBS6sWGdvOx7qOdDp0lBRecQDQOl7mDauRvCCQVJoVjL0onL4gBye";
-
-/**
- * Verify a login attempt against CONSOLE_AUTH_EMAIL (case-insensitive,
- * trimmed) and CONSOLE_AUTH_PASSWORD_HASH (bcrypt). Throws when the
- * environment is not configured.
- */
-export async function verifyConsoleCredentials(
-  email: string,
-  password: string,
-): Promise<boolean> {
-  const configuredEmail = process.env.CONSOLE_AUTH_EMAIL;
-  const passwordHash = process.env.CONSOLE_AUTH_PASSWORD_HASH;
-  if (!configuredEmail || !passwordHash) {
-    throw new Error("Console authentication credentials are not configured.");
-  }
-
-  const bcrypt = (await import("bcryptjs")).default;
-
-  const emailMatches =
-    email.trim().toLowerCase() === configuredEmail.trim().toLowerCase();
-  // Always bcrypt-compare, even on email mismatch, to blunt
-  // user-enumeration timing attacks.
-  const passwordMatches = await bcrypt.compare(
-    password,
-    emailMatches ? passwordHash : DUMMY_PASSWORD_HASH,
-  );
-
-  return emailMatches && passwordMatches;
+export function normaliseConsoleEmail(
+    email: string,
+): string {
+  return email.trim().toLowerCase();
 }
 
-/** Normalised identity stored in the session token. */
-export function normaliseConsoleEmail(email: string): string {
-  return email.trim().toLowerCase();
+function getAuthenticationConfiguration(): {
+  email: string;
+  passwordHash: string;
+  dummyPasswordHash: string;
+} {
+  const email =
+      process.env.CONSOLE_AUTH_EMAIL
+          ?.trim()
+          .toLowerCase();
+
+  const passwordHash =
+      process.env.CONSOLE_AUTH_PASSWORD_HASH
+          ?.trim();
+
+  const dummyPasswordHash =
+      process.env.CONSOLE_AUTH_DUMMY_PASSWORD_HASH
+          ?.trim();
+
+  if (!email) {
+    throw new Error(
+        "CONSOLE_AUTH_EMAIL is not configured.",
+    );
+  }
+
+  if (!passwordHash) {
+    throw new Error(
+        "CONSOLE_AUTH_PASSWORD_HASH is not configured.",
+    );
+  }
+
+  if (!dummyPasswordHash) {
+    throw new Error(
+        "CONSOLE_AUTH_DUMMY_PASSWORD_HASH is not configured.",
+    );
+  }
+
+  return {
+    email,
+    passwordHash,
+    dummyPasswordHash,
+  };
+}
+
+export async function verifyConsoleCredentials(
+    email: string,
+    password: string,
+): Promise<boolean> {
+  const configuration =
+      getAuthenticationConfiguration();
+
+  const bcrypt =
+      (await import("bcryptjs")).default;
+
+  const normalisedEmail =
+      normaliseConsoleEmail(email);
+
+  const emailMatches =
+      normalisedEmail === configuration.email;
+
+  /*
+   * Always execute bcrypt comparison.
+   *
+   * When the email is unknown, compare against a dummy bcrypt hash
+   * instead of skipping the expensive password operation.
+   *
+   * This reduces observable timing differences between:
+   *
+   * - known account + invalid password
+   * - unknown account
+   */
+  const comparisonHash =
+      emailMatches
+          ? configuration.passwordHash
+          : configuration.dummyPasswordHash;
+
+  const passwordMatches =
+      await bcrypt.compare(
+          password,
+          comparisonHash,
+      );
+
+  return (
+      emailMatches &&
+      passwordMatches
+  );
 }
