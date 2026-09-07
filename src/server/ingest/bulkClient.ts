@@ -1,9 +1,8 @@
-import { PrismaClient } from "@prisma/client";
 import { normaliseRelease } from "@/lib/ocds/normalise";
 import { isOcdsRelease } from "@/lib/ocds/types";
 import type { OcdsRelease } from "@/lib/ocds/types";
+import { getPrismaClient } from "@/lib/prisma";
 
-const prisma = new PrismaClient();
 const DOWNLOAD_PAGE = "https://data.etenders.gov.za/Home/ReleasesFiles";
 
 export async function fetchMonthlyFilesList(): Promise<{ year: number; month: number; url: string }[]> {
@@ -25,6 +24,7 @@ export async function fetchMonthlyFilesList(): Promise<{ year: number; month: nu
 }
 
 async function processRelease(release: OcdsRelease, source: string) {
+  const prisma = getPrismaClient();
   const now = new Date();
   const opp = normaliseRelease(release, now);
   if (!opp) return;
@@ -115,6 +115,7 @@ async function processRelease(release: OcdsRelease, source: string) {
 }
 
 export async function processNewMonthlyFiles() {
+  const prisma = getPrismaClient();
   const files = await fetchMonthlyFilesList();
   const existing = await prisma.monthlyFile.findMany({
     select: { fileUrl: true },

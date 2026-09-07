@@ -1,7 +1,7 @@
-import { PrismaClient } from "@prisma/client";
 import type { Opportunity } from "@/lib/ocds/types";
+import { getPrismaClient } from "@/lib/prisma";
 
-const prisma = new PrismaClient();
+const prisma = getPrismaClient();
 
 export const opportunityRepository = {
   async upsert(opp: Opportunity): Promise<void> {
@@ -56,6 +56,7 @@ export const opportunityRepository = {
   },
 
   async closePastDeadlines(now: Date): Promise<void> {
+    const prisma = getPrismaClient();
     await prisma.opportunity.updateMany({
       where: {
         closingDate: { lt: now },
