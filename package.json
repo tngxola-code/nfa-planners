@@ -10,7 +10,9 @@
     "lint": "next lint",
     "typecheck": "prisma generate && tsc --noEmit",
     "test:smoke": "node scripts/smoke/run.mjs",
-    "ingest": "node scripts/ingest.mjs"
+    "ingest": "node scripts/ingest.mjs",
+    "postinstall": "prisma generate",
+    "prebuild": "prisma generate"
   },
   "dependencies": {
     "@prisma/client": "^7.10.0",
