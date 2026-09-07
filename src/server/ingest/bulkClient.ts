@@ -1,4 +1,4 @@
-import { Prisma, PrismaClient } from "@prisma/client";
+import { PrismaClient } from "@prisma/client";
 import { normaliseRelease } from "@/lib/ocds/normalise";
 import { isOcdsRelease } from "@/lib/ocds/types";
 import type { OcdsRelease } from "@/lib/ocds/types";
@@ -9,7 +9,6 @@ const DOWNLOAD_PAGE = "https://data.etenders.gov.za/Home/ReleasesFiles";
 export async function fetchMonthlyFilesList(): Promise<{ year: number; month: number; url: string }[]> {
   const response = await fetch(DOWNLOAD_PAGE);
   const html = await response.text();
-  // Extract .json file links from the page (simple regex)
   const linkRegex = /<a[^>]+href="([^"]+\.json)"[^>]*>/gi;
   const matches = Array.from(html.matchAll(linkRegex));
   const urls = matches.map(m => m[1]);
@@ -30,7 +29,6 @@ async function processRelease(release: OcdsRelease, source: string) {
   const opp = normaliseRelease(release, now);
   if (!opp) return;
 
-  // Upsert main opportunity
   await prisma.opportunity.upsert({
     where: { hash: opp.hash },
     update: {
@@ -80,7 +78,6 @@ async function processRelease(release: OcdsRelease, source: string) {
     },
   });
 
-  // Determine status and award info
   let status = opp.status;
   let awardee: string | undefined;
   let awardAmount: number | undefined;
@@ -112,7 +109,7 @@ async function processRelease(release: OcdsRelease, source: string) {
       awardAmount,
       awardCurrency,
       source,
-      rawData: release as unknown as Prisma.InputJsonValue,
+      rawData: release as any,
     },
   });
 }
@@ -122,7 +119,7 @@ export async function processNewMonthlyFiles() {
   const existing = await prisma.monthlyFile.findMany({
     select: { fileUrl: true },
   });
-  const existingUrls = new Set(existing.map(f => f.fileUrl));
+  const existingUrls = new Set(existing.map((f: { fileUrl: string }) => f.fileUrl));
 
   for (const file of files) {
     if (existingUrls.has(file.url)) continue;
