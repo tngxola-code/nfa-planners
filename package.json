@@ -5,11 +5,10 @@
   "description": "NFA Planners internal console for tender/opportunity intelligence",
   "scripts": {
     "dev": "next dev -p 3002",
-    "prebuild": "prisma generate",
     "build": "next build",
     "start": "next start -p 3002",
     "lint": "next lint",
-    "typecheck": "prisma generate "typecheck": "tsc --noEmit""typecheck": "tsc --noEmit" tsc --noEmit",
+    "typecheck": "prisma generate && tsc --noEmit",
     "test:smoke": "node scripts/smoke/run.mjs",
     "ingest": "node scripts/ingest.mjs"
   },
