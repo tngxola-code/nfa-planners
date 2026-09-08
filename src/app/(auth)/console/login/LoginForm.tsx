@@ -96,7 +96,7 @@ export function LoginForm() {
 
     try {
       const response = await fetch(
-          "/api/internal/auth/login",
+          "/api/auth/login",
           {
             method: "POST",
 
