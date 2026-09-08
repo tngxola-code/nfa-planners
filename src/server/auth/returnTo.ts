@@ -1,23 +1,64 @@
 /**
- * Post-login redirect target sanitisation.
+ * Safe console post-login redirect handling.
  *
- * Pure + edge-safe. Prevents open redirects: only same-origin paths beneath
- * the console (excluding the login page itself) are honoured.
+ * Prevents open redirects.
+ *
+ * Only local /console paths are permitted.
  */
 
-export const DEFAULT_RETURN_TO = "/console";
+export const DEFAULT_RETURN_TO =
+    "/console/dashboard";
 
-/**
- * Return a safe post-login path. Rejects:
- *  - null/empty values                          -> default,
- *  - protocol-relative URLs ("//evil.example")  -> default,
- *  - anything outside "/console/..."            -> default,
- *  - the login page itself (redirect loops)     -> default.
- */
-export function sanitiseReturnTo(value: string | null): string {
-  if (!value) return DEFAULT_RETURN_TO;
-  if (value.startsWith("//")) return DEFAULT_RETURN_TO;
-  if (!value.startsWith("/console/")) return DEFAULT_RETURN_TO;
-  if (value.startsWith("/console/login")) return DEFAULT_RETURN_TO;
-  return value;
+export function sanitiseReturnTo(
+    value: string | null,
+): string {
+  if (!value) {
+    return DEFAULT_RETURN_TO;
+  }
+
+  if (!value.startsWith("/")) {
+    return DEFAULT_RETURN_TO;
+  }
+
+  if (value.startsWith("//")) {
+    return DEFAULT_RETURN_TO;
+  }
+
+  try {
+    const url = new URL(
+        value,
+        "https://nfa.invalid",
+    );
+
+    const pathname = url.pathname;
+
+    const isConsolePath =
+        pathname === "/console" ||
+        pathname.startsWith("/console/");
+
+    if (!isConsolePath) {
+      return DEFAULT_RETURN_TO;
+    }
+
+    if (
+        pathname === "/console/login" ||
+        pathname.startsWith(
+            "/console/login/",
+        )
+    ) {
+      return DEFAULT_RETURN_TO;
+    }
+
+    /*
+     * Normalise the generic console root
+     * to the dashboard.
+     */
+    if (pathname === "/console") {
+      return DEFAULT_RETURN_TO;
+    }
+
+    return `${pathname}${url.search}`;
+  } catch {
+    return DEFAULT_RETURN_TO;
+  }
 }

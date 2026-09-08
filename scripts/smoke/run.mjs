@@ -293,7 +293,7 @@ test("normalise: hash is stable across runs", async () => {
 test("client: fetchOcdsReleases returns releases from an injected fetch", async () => {
   const { fetchOcdsReleases } = await lib("src/lib/ocds/client.ts");
   const fakeFetch = async (url) => {
-    assert.match(String(url), /https:\/\/ocds\.example\.test\/api\/OCDSReleases\?.*PageSize=5/);
+    assert.match(String(url), /^https:\/\/ocds\.example\.test\/releases\?limit=5$/);
     return new Response(JSON.stringify({ releases: [fixtureRelease()] }), {
       status: 200,
       headers: { "content-type": "application/json" },
@@ -529,6 +529,288 @@ test("store: notification repository dedups by stable key", async () => {
   assert.equal(all.length, 2);
   assert.equal(all[0].id, "notif-1");
   assert.equal(all[1].status, "failed");
+});
+
+// ---------------------------------------------------------------------------
+// Email digest notifications (feat/009-email-notifications)
+// ---------------------------------------------------------------------------
+
+const DIGEST_NOW = new Date("2025-01-15T09:00:00.000Z");
+
+test("digest: subject, sorting, links, badge and urgent closing render", async () => {
+  const { renderDigestEmail } = await lib("src/server/notifications/digest.ts");
+
+  const lowerFit = makeOpportunity({
+    reference: "EC/GIS/2025/001",
+    title: "GIS mapping & cadastral <survey> services",
+    hash: "d-1",
+    fitScore: 60,
+    closingDate: "2025-01-16T09:00:00.000Z", // 1 day out -> urgent red
+    location: "Makhanda",
+  });
+  const highFit = makeOpportunity({
+    reference: "EC/TP/2025/014",
+    fitScore: 92,
+    closingDate: "2025-02-28T11:00:00.000Z",
+  });
+
+  const { subject, html, text } = renderDigestEmail([lowerFit, highFit], DIGEST_NOW);
+
+  assert.match(subject, /\[NFA\] 2 new opportunities — /);
+  assert.ok(
+    subject.includes("town planner"),
+    `subject should lead with the top-fit title, got: ${subject}`,
+  );
+
+  // Sorted by fitScore desc: high-fit row must appear before the lower-fit one.
+  assert.ok(
+    html.indexOf("EC/TP/2025/014") < html.indexOf("EC/GIS/2025/001"),
+    "rows must be sorted by fitScore descending",
+  );
+
+  // Console links and references present.
+  assert.match(html, /https:\/\/console\.nfaplanners\.com\/opportunities\/EC%2FTP%2F2025%2F014/);
+  assert.match(html, /https:\/\/console\.nfaplanners\.com\/opportunities\/EC%2FGIS%2F2025%2F001/);
+
+  // High-match badge only on the >=80 item.
+  assert.equal(html.match(/High Match/g).length, 1, "expected exactly one High Match badge");
+
+  // Urgent closing (<=3 days) rendered red; the non-urgent one is not.
+  assert.match(html, /#B3261E/);
+
+  // HTML escaping of title content.
+  assert.ok(html.includes("GIS mapping &amp; cadastral &lt;survey&gt; services"));
+  assert.ok(!html.includes("<survey>"), "raw HTML from titles must be escaped");
+
+  // Plain-text fallback contains the essentials.
+  assert.match(text, /2 new opportunities/);
+  assert.match(text, /EC\/TP\/2025\/014/);
+  assert.match(text, /\[HIGH MATCH\]/);
+});
+
+test("digest: empty list renders a graceful empty state", async () => {
+  const { renderDigestEmail } = await lib("src/server/notifications/digest.ts");
+  const { subject, html, text } = renderDigestEmail([], DIGEST_NOW);
+  assert.equal(subject, "[NFA] No new opportunities");
+  assert.match(html, /No new opportunities/);
+  assert.match(text, /No new opportunities/);
+});
+
+test("digest: sendDigest skips when nothing is eligible (no API key needed)", async () => {
+  const { sendDigest } = await lib("src/server/notifications/sendDigest.ts");
+  const { upsertOpportunities, markNotified } = await lib(
+    "src/server/repositories/opportunities.ts",
+  );
+  const dataDir = tempDataDir();
+  const opts = { dataDir };
+
+  await upsertOpportunities(
+    [
+      makeOpportunity({ hash: "s-1", reference: "S-1" }),
+      makeOpportunity({ hash: "s-2", reference: "S-2" }),
+    ],
+    opts,
+  );
+  await markNotified(["s-1", "s-2"], "2025-01-15T10:00:00.000Z", opts);
+
+  const savedKey = process.env.RESEND_API_KEY;
+  delete process.env.RESEND_API_KEY;
+  try {
+    const result = await sendDigest("planners@nfaplanners.com", opts);
+    assert.deepEqual(result, { sent: 0, skipped: true });
+  } finally {
+    if (savedKey !== undefined) process.env.RESEND_API_KEY = savedKey;
+  }
+});
+
+test("digest: sendDigest skips when notifications already sent for the hash", async () => {
+  const { sendDigest } = await lib("src/server/notifications/sendDigest.ts");
+  const { upsertOpportunities } = await lib(
+    "src/server/repositories/opportunities.ts",
+  );
+  const { recordNotification } = await lib(
+    "src/server/repositories/notifications.ts",
+  );
+  const dataDir = tempDataDir();
+  const opts = { dataDir };
+
+  const opp = makeOpportunity({ hash: "s-9", reference: "S-9" });
+  await upsertOpportunities([opp], opts);
+  // A prior digest already covered this opportunity under a previous id;
+  // notifiedAt is absent (e.g. record predates the flag) but the dedup key hit
+  // must still suppress a resend.
+  await recordNotification(
+    {
+      id: "n-old",
+      opportunityId: "old-id",
+      reference: "S-9",
+      dedupKey: "s-9",
+      channel: "email",
+      status: "sent",
+      recipient: "planners@nfaplanners.com",
+      sentAt: "2025-01-14T06:00:00.000Z",
+      createdAt: "2025-01-14T06:00:00.000Z",
+    },
+    opts,
+  );
+
+  const savedKey = process.env.RESEND_API_KEY;
+  delete process.env.RESEND_API_KEY;
+  try {
+    const result = await sendDigest("planners@nfaplanners.com", opts);
+    assert.deepEqual(result, { sent: 0, skipped: true });
+  } finally {
+    if (savedKey !== undefined) process.env.RESEND_API_KEY = savedKey;
+  }
+});
+
+test("digest: markNotified stamps records and is reflected in listing", async () => {
+  const { upsertOpportunities, markNotified, listOpportunities } = await lib(
+    "src/server/repositories/opportunities.ts",
+  );
+  const dataDir = tempDataDir();
+  const opts = { dataDir };
+
+  await upsertOpportunities(
+    [makeOpportunity({ hash: "m-1" }), makeOpportunity({ hash: "m-2", reference: "M-2" })],
+    opts,
+  );
+  const marked = await markNotified(["m-2"], "2025-01-15T12:00:00.000Z", opts);
+  assert.equal(marked, 1);
+
+  const all = await listOpportunities({}, opts);
+  const byHash = Object.fromEntries(all.map((o) => [o.hash, o]));
+  assert.equal(byHash["m-1"].notifiedAt, undefined);
+  assert.equal(byHash["m-2"].notifiedAt, "2025-01-15T12:00:00.000Z");
+
+  // Content update on a notified record must keep the stamp (no re-email).
+  await upsertOpportunities(
+    [makeOpportunity({ hash: "m-2", reference: "M-2", fitScore: 99, fitReason: "Score 99/100" })],
+    opts,
+  );
+  const after = await listOpportunities({}, opts);
+  const updated = after.find((o) => o.hash === "m-2");
+  assert.equal(updated.fitScore, 99);
+  assert.equal(updated.notifiedAt, "2025-01-15T12:00:00.000Z");
+});
+
+// ---------------------------------------------------------------------------
+// Ingest runner (feat/010-opportunity-scheduler)
+// ---------------------------------------------------------------------------
+
+/** Release fixture with a genuinely future closing date (real-clock safe). */
+const FUTURE_CLOSING = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+function futureRelease(overrides = {}) {
+  // NOTE: one shared closing timestamp — closingDate feeds the dedup hash, so
+  // repeated calls must produce identical opportunities.
+  return fixtureRelease({ tenderPeriod: { endDate: FUTURE_CLOSING }, ...overrides });
+}
+
+test("ingest: happy path normalises, persists and reports", async () => {
+  const { runIngest } = await lib("src/server/ingest/runIngest.ts");
+  const { listOpportunities } = await lib("src/server/repositories/opportunities.ts");
+  const dataDir = tempDataDir();
+
+  const report = await runIngest({
+    dataDir,
+    notify: false,
+    fetchReleases: async () => [
+      futureRelease(),
+      futureRelease({
+        id: "ocds-abc123-002",
+        tenderID: "EC/CATER/2025/099",
+        title: "Catering services for school nutrition programme",
+        description: "Supply and delivery of cooked meals.",
+        classification: { scheme: "CPV - catering" },
+        procuringEntity: { name: "Community Hall Committee" },
+      }),
+    ],
+  });
+
+  assert.equal(report.fetched, 2);
+  assert.equal(report.normalised, 1);
+  assert.equal(report.droppedLowFit, 1);
+  assert.equal(report.inserted, 1);
+  assert.equal(report.updated, 0);
+  assert.equal(report.skippedDuplicates, 0);
+  assert.deepEqual(report.notified, { sent: 0, skipped: true });
+  assert.deepEqual(report.errors, []);
+  assert.ok(report.startedAt && report.finishedAt);
+  assert.ok(report.durationMs >= 0);
+
+  const stored = await listOpportunities({}, { dataDir });
+  assert.equal(stored.length, 1);
+  assert.equal(stored[0].reference, "EC/TP/2025/014");
+
+  // Second run: identical content -> skippedDuplicates, nothing re-inserted.
+  const again = await runIngest({
+    dataDir,
+    fetchReleases: async () => [futureRelease()],
+  });
+  assert.equal(again.inserted, 0);
+  assert.equal(again.skippedDuplicates, 1);
+  assert.equal((await listOpportunities({}, { dataDir })).length, 1);
+});
+
+test("ingest: fetch failure yields a report with errors, no throw", async () => {
+  const { runIngest } = await lib("src/server/ingest/runIngest.ts");
+  const dataDir = tempDataDir();
+
+  const report = await runIngest({
+    dataDir,
+    fetchReleases: async () => {
+      throw new Error("OCDS request failed with status 503");
+    },
+  });
+
+  assert.equal(report.fetched, 0);
+  assert.equal(report.normalised, 0);
+  assert.equal(report.inserted, 0);
+  assert.deepEqual(report.notified, { sent: 0, skipped: true });
+  assert.equal(report.errors.length, 1);
+  assert.match(report.errors[0], /fetch failed: OCDS request failed with status 503/);
+});
+
+test("ingest: per-release normalise crash is collected, not thrown", async () => {
+  const { runIngest } = await lib("src/server/ingest/runIngest.ts");
+  const dataDir = tempDataDir();
+
+  const report = await runIngest({
+    dataDir,
+    fetchReleases: async () => [
+      futureRelease(),
+      { id: "ocds-broken", tenderID: 123 }, // malformed: trim() will throw
+    ],
+  });
+
+  assert.equal(report.fetched, 2);
+  assert.equal(report.normalised, 1, "good release still ingested");
+  assert.equal(report.errors.length, 1);
+  assert.match(report.errors[0], /normalise failed for release ocds-broken/);
+});
+
+test("ingest: notify=true captures send failure in report.errors", async () => {
+  const { runIngest } = await lib("src/server/ingest/runIngest.ts");
+  const dataDir = tempDataDir();
+
+  const savedKey = process.env.RESEND_API_KEY;
+  delete process.env.RESEND_API_KEY;
+  try {
+    const report = await runIngest({
+      dataDir,
+      notify: true,
+      recipient: "planners@nfaplanners.com",
+      fetchReleases: async () => [futureRelease()],
+    });
+    assert.equal(report.inserted, 1);
+    assert.deepEqual(report.notified, { sent: 0, skipped: true });
+    assert.ok(
+      report.errors.some((e) => /notification failed:.*RESEND_API_KEY/.test(e)),
+      `expected RESEND_API_KEY failure in errors, got: ${JSON.stringify(report.errors)}`,
+    );
+  } finally {
+    if (savedKey !== undefined) process.env.RESEND_API_KEY = savedKey;
+  }
 });
 
 let failed = 0;

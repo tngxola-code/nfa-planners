@@ -199,25 +199,22 @@ export function scoreFit(input: FitInput): FitResult {
     }
   }
 
-  // Only add client/location bonuses if at least one capability matched.
-  if (matchedCapabilities.length > 0) {
-    // Government / institutional client bonus: check the client field first,
-    // fall back to the title (buyers are often named in the title only).
-    const clientHaystack = `${client} ${title}`;
-    if (GOVERNMENT_CLIENT_PATTERNS.some((pattern) => containsKeyword(clientHaystack, pattern))) {
-      score += GOVERNMENT_CLIENT_BONUS;
-      reasonParts.push(`government/institutional client +${GOVERNMENT_CLIENT_BONUS}`);
-    }
+  // Government / institutional client bonus: check the client field first,
+  // fall back to the title (buyers are often named in the title only).
+  const clientHaystack = `${client} ${title}`;
+  if (GOVERNMENT_CLIENT_PATTERNS.some((pattern) => containsKeyword(clientHaystack, pattern))) {
+    score += GOVERNMENT_CLIENT_BONUS;
+    reasonParts.push(`government/institutional client +${GOVERNMENT_CLIENT_BONUS}`);
+  }
 
-    // Location bonus: Eastern Cape presence outweighs a generic national one.
-    const locationHaystack = `${location} ${title} ${description}`;
-    if (EASTERN_CAPE_PATTERNS.some((pattern) => containsKeyword(locationHaystack, pattern))) {
-      score += EASTERN_CAPE_BONUS;
-      reasonParts.push(`Eastern Cape location +${EASTERN_CAPE_BONUS}`);
-    } else if (NATIONAL_PATTERNS.some((pattern) => containsKeyword(locationHaystack, pattern))) {
-      score += NATIONAL_BONUS;
-      reasonParts.push(`national location +${NATIONAL_BONUS}`);
-    }
+  // Location bonus: Eastern Cape presence outweighs a generic national one.
+  const locationHaystack = `${location} ${title} ${description}`;
+  if (EASTERN_CAPE_PATTERNS.some((pattern) => containsKeyword(locationHaystack, pattern))) {
+    score += EASTERN_CAPE_BONUS;
+    reasonParts.push(`Eastern Cape location +${EASTERN_CAPE_BONUS}`);
+  } else if (NATIONAL_PATTERNS.some((pattern) => containsKeyword(locationHaystack, pattern))) {
+    score += NATIONAL_BONUS;
+    reasonParts.push(`national location +${NATIONAL_BONUS}`);
   }
 
   const clamped = Math.max(0, Math.min(100, score));

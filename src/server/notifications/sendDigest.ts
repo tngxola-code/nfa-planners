@@ -23,10 +23,11 @@
 
 import { randomUUID } from "node:crypto";
 
-import type { Opportunity } from "@/lib/ocds/types";
+import type { Opportunity } from "../../lib/ocds/types";
 import type { DataDirOptions } from "../paths";
 import {
   listOpportunities,
+  markNotified,
 } from "../repositories/opportunities";
 import {
   hasBeenNotified,
@@ -113,6 +114,12 @@ export async function sendDigest(
       `sendDigest: Resend rejected the digest email: ${providerError.message}`,
     );
   }
+
+  await markNotified(
+    eligible.map((opportunity) => opportunity.hash),
+    attemptedAt,
+    options,
+  );
 
   return { sent: eligible.length, skipped: false };
 }

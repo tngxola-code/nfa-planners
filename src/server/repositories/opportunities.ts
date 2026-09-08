@@ -7,7 +7,7 @@
  * deduplicated by their stable `hash` (sha256 of
  * reference|title|client|closingDate, computed during normalisation).
  *
- * All functions accept an optional `{ dataDir }` (or honour NFA_DATA_DIR), so
+ * All functions accept an optional `{ dataDir }` (or honour NFA_DATA_DIR) so
  * smoke tests can run against a temp directory without touching real data.
  */
 
@@ -19,7 +19,7 @@ import type {
   Opportunity,
   OpportunityCategory,
   OpportunityStatus,
-} from "@/lib/ocds/types";
+} from "../../lib/ocds/types";
 
 import { resolveDataDir, type DataDirOptions } from "../paths";
 import { readJsonFile, updateJsonFile } from "../store/fileStore";
