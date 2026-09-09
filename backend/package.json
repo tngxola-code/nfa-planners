@@ -14,7 +14,8 @@
     "test:integration": "vitest run tests/integration",
     "test:coverage": "vitest run --coverage",
     "lint": "eslint src tests",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "migrate:deploy": "prisma migrate deploy"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
