@@ -1,51 +1,30 @@
 {
-  "name": "nfa-planners-web",
-  "version": "0.1.0",
+  "name": "nfa-planners",
+  "version": "1.0.0",
   "private": true,
-  "description": "NFA Planners internal console for tender/opportunity intelligence",
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
   "scripts": {
-    "dev": "next dev -p 3002",
-    "build": "next build",
-    "start": "next start -p 3002",
-    "lint": "next lint",
-    "lint:sonar": "eslint -f json -o eslint-report.json src",
-    "typecheck": "prisma generate && tsc --noEmit",
-    "test:smoke": "node scripts/smoke/run.mjs",
-    "ingest": "node scripts/ingest.mjs",
-    "postinstall": "prisma generate",
-    "prebuild": "prisma generate"
-  },
-  "dependencies": {
-    "@prisma/adapter-pg": "^7.10.0",
-    "@prisma/client": "^7.10.0",
-    "bcrypt": "^6.0.0",
-    "bcryptjs": "^3.0.3",
-    "dotenv": "^17.4.2",
-    "express": "^5.2.1",
-    "jose": "^5.10.0",
-    "jsonwebtoken": "^9.0.3",
-    "next": "14.2.35",
-    "pg": "^8.23.0",
-    "prisma": "^7.10.0",
-    "react": "18.3.1",
-    "react-dom": "18.3.1",
-    "resend": "4.8.0"
+    "dev:frontend": "npm --workspace frontend run dev",
+    "dev:backend": "npm --workspace backend run dev",
+    "build:frontend": "npm --workspace frontend run build",
+    "build:backend": "npm --workspace backend run build",
+    "typecheck:frontend": "npm --workspace frontend run typecheck",
+    "typecheck:backend": "npm --workspace backend run typecheck",
+    "test:backend": "npm --prefix backend test",
+    "test:frontend": "npm --prefix frontend test",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test": "npm run test:backend && npm run test:frontend",
+    "test:all": "npm test && npm run test:e2e",
+    "prepare": "husky",
+    "quality:gate": "./scripts/quality/pre-commit.sh",
+    "quality:full": "./scripts/quality/pre-push.sh"
   },
   "devDependencies": {
-    "@types/bcrypt": "^6.0.0",
-    "@types/bcryptjs": "3.0.0",
-    "@types/node": "20.19.43",
-    "@types/pg": "^8.23.1",
-    "@types/react": "18.3.12",
-    "@types/react-dom": "18.3.1",
-    "autoprefixer": "10.4.20",
-    "eslint": "8.57.1",
-    "eslint-config-next": "14.2.35",
-    "postcss": "8.4.49",
-    "tailwindcss": "3.4.17",
-    "typescript": "5.6.3"
-  },
-  "engines": {
-    "node": ">=20.0.0"
+    "@playwright/test": "^1.63.0",
+    "husky": "^9.1.7"
   }
 }

@@ -1,0 +1,6 @@
+#!/usr/bin/env sh
+
+echo
+echo "Running NFA pre-commit quality gate..."
+
+./scripts/quality/pre-commit.sh

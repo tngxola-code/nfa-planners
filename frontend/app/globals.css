@@ -1,0 +1,766 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* { box-sizing: border-box; }
+body { margin: 0; background: #F4F6F8; color: #1A1C1E; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { background: #c5ccd4; border-radius: 6px; }
+
+/* =========================================================
+   NFA CONSOLE LOGIN
+   ========================================================= */
+
+.nfa-login {
+  min-height: 100vh;
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  background: #ffffff;
+  overflow: hidden;
+  font-family: 'Inter', Arial, sans-serif;
+  color: #1b2a4a;
+}
+
+.nfa-login__brand {
+  position: relative;
+  min-height: 100vh;
+  overflow: hidden;
+  background: #f3f1ec;
+  padding: 62px 70px 66px;
+  display: flex;
+  flex-direction: column;
+}
+
+.nfa-login__logo {
+  position: relative;
+  z-index: 10;
+  width: 199px;
+  height: auto;
+  object-fit: contain;
+  object-position: left top;
+}
+
+.nfa-login__message {
+  position: relative;
+  z-index: 10;
+  margin-top: 125px;
+}
+
+.nfa-login__message h1 {
+  margin: 0;
+  font-family: 'Poppins', Arial, sans-serif;
+  font-size: clamp(58px, 4.55vw, 76px);
+  font-weight: 400;
+  line-height: 1.01;
+  letter-spacing: -4.3px;
+  color: #0f1e36;
+}
+
+.nfa-login__green-line {
+  width: 91px;
+  height: 7px;
+  margin-top: 38px;
+  background: #58a444;
+}
+
+.nfa-login__message p {
+  margin: 36px 0 0;
+  font-size: 20px;
+  line-height: 1.5;
+  font-weight: 400;
+  color: #7183a4;
+}
+
+.nfa-login__tagline {
+  position: absolute;
+  left: 70px;
+  bottom: 64px;
+  z-index: 10;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.65;
+  letter-spacing: 2px;
+  color: #7183a4;
+}
+
+.nfa-shape {
+  position: absolute;
+  pointer-events: none;
+}
+
+.nfa-shape--green-orange {
+  right: -41px;
+  bottom: 183px;
+  width: 260px;
+  height: 260px;
+  border-radius: 130px 0 0 45px;
+  background:
+    linear-gradient(
+      to bottom,
+      #55a43b 0%,
+      #55a43b 69%,
+      #ff9617 69%,
+      #ff9617 100%
+    );
+  z-index: 1;
+}
+
+.nfa-shape--red {
+  right: 219px;
+  bottom: 79px;
+  width: 109px;
+  height: 108px;
+  background: #ed1227;
+  z-index: 2;
+}
+
+.nfa-shape--blue {
+  right: -185px;
+  bottom: -270px;
+  width: 435px;
+  height: 435px;
+  border-radius: 50%;
+  background: #00649d;
+  z-index: 3;
+}
+
+.nfa-login__content {
+  position: relative;
+  min-height: 100vh;
+  padding: 50px 70px 57px;
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+}
+
+.nfa-login__help {
+  text-align: right;
+  min-height: 30px;
+}
+
+.nfa-login__help a {
+  font-size: 14px;
+  color: #7183a4;
+  text-decoration: none;
+}
+
+.nfa-login__form-wrap {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.nfa-login__form-content {
+  width: 100%;
+  max-width: 550px;
+  transform: translateY(-6px);
+}
+
+.nfa-login__form-content h2 {
+  margin: 0 0 10px;
+  font-family: 'Poppins', Arial, sans-serif;
+  font-size: 46px;
+  line-height: 1.1;
+  font-weight: 700;
+  letter-spacing: -1.8px;
+  color: #071a33;
+}
+
+.nfa-login__intro {
+  margin: 0 0 60px;
+  color: #7183a4;
+  font-size: 16px;
+  line-height: 1.55;
+}
+
+.nfa-login__auth-error {
+  margin: -35px 0 22px;
+  padding: 12px 14px;
+  border: 1px solid #efc2bd;
+  border-radius: 4px;
+  background: #fff6f5;
+  color: #c0392b;
+  font-size: 14px;
+}
+
+.nfa-login__form-content form > label {
+  display: block;
+  margin-bottom: 12px;
+  color: #071a33;
+  font-size: 14px;
+  line-height: 1;
+  font-weight: 600;
+}
+
+.nfa-field {
+  position: relative;
+  width: 100%;
+}
+
+.nfa-field input {
+  display: block;
+  width: 100%;
+  height: 55px;
+  padding: 0 48px;
+  border: 1px solid #d7dce5;
+  border-radius: 0;
+  outline: none;
+  background: #ffffff;
+  color: #1b2a4a;
+  font-family: 'Inter', Arial, sans-serif;
+  font-size: 15px;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.nfa-field input::placeholder {
+  color: #8190ae;
+  opacity: 1;
+}
+
+.nfa-field input:focus {
+  border-color: #8ea9c4;
+  box-shadow: 0 0 0 1px rgba(30, 90, 150, 0.08);
+}
+
+.nfa-field input.is-error {
+  border-color: #c0392b;
+}
+
+.nfa-field__icon {
+  position: absolute;
+  left: 17px;
+  top: 50%;
+  z-index: 2;
+  transform: translateY(-50%);
+  display: flex;
+  color: #7183a4;
+}
+
+.nfa-field__toggle {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  z-index: 2;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3px;
+  border: 0;
+  background: transparent;
+  color: #7183a4;
+  cursor: pointer;
+}
+
+.nfa-field-error {
+  min-height: 31px;
+  padding-top: 5px;
+  color: #c0392b;
+  font-size: 12px;
+}
+
+.nfa-login__options {
+  margin-top: -1px;
+  margin-bottom: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.nfa-checkbox {
+  display: flex !important;
+  align-items: center;
+  gap: 9px;
+  margin: 0 !important;
+  color: #071a33 !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  cursor: pointer;
+}
+
+.nfa-checkbox input {
+  appearance: none;
+  width: 19px;
+  height: 19px;
+  margin: 0;
+  border: 1px solid #cfd4dc;
+  background: #fff;
+  cursor: pointer;
+  position: relative;
+}
+
+.nfa-checkbox input:checked {
+  border-color: #00649d;
+  background: #00649d;
+}
+
+.nfa-checkbox input:checked::after {
+  content: '';
+  position: absolute;
+  left: 6px;
+  top: 2px;
+  width: 4px;
+  height: 9px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.nfa-login__options a {
+  color: #008bdf;
+  font-size: 14px;
+  text-decoration: underline;
+}
+
+.nfa-login__submit {
+  width: 100%;
+  height: 55px;
+  border: 0;
+  border-radius: 0;
+  background: #00649d;
+  color: #ffffff;
+  font-family: 'Inter', Arial, sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    opacity 0.15s ease;
+}
+
+.nfa-login__submit:hover {
+  background: #005789;
+}
+
+.nfa-login__submit:disabled {
+  cursor: default;
+  opacity: 0.72;
+}
+
+.nfa-spinner {
+  display: inline-block;
+  width: 15px;
+  height: 15px;
+  margin-right: 8px;
+  vertical-align: -2px;
+  border: 2px solid rgba(255,255,255,0.45);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: nfa-spin 0.7s linear infinite;
+}
+
+@keyframes nfa-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.nfa-login__footer {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  color: #7183a4;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.nfa-login__footer nav {
+  display: flex;
+  gap: 30px;
+}
+
+.nfa-login__footer a {
+  color: #7183a4;
+  text-decoration: none;
+}
+
+.nfa-login__footer a:hover,
+.nfa-login__help a:hover {
+  color: #1e5a96;
+}
+
+@media (max-width: 1000px) {
+  .nfa-login {
+    grid-template-columns: 1fr;
+  }
+
+  .nfa-login__brand {
+    display: none;
+  }
+
+  .nfa-login__content {
+    padding: 32px;
+  }
+
+  .nfa-login__form-content {
+    max-width: 520px;
+  }
+}
+
+@media (max-width: 620px) {
+  .nfa-login__content {
+    padding: 24px;
+  }
+
+  .nfa-login__help {
+    margin-bottom: 35px;
+  }
+
+  .nfa-login__form-content h2 {
+    font-size: 38px;
+  }
+
+  .nfa-login__intro {
+    margin-bottom: 40px;
+  }
+
+  .nfa-login__footer {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .nfa-login__footer nav {
+    gap: 18px;
+  }
+
+  .desktop-break {
+    display: none;
+  }
+}
+
+/* NFA LOGIN - REFERENCE DESIGN */
+
+.nfaLogin {
+  width: 100%;
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 50% 50%;
+  overflow: hidden;
+  background: #fff;
+  color: #1B2A4A;
+  font-family: 'Inter', Arial, sans-serif;
+}
+
+.nfaBrand {
+  min-width: 0;
+  min-height: 100vh;
+  position: relative;
+  overflow: hidden;
+  padding: 50px 70px 64px;
+  background: #F1EFE9;
+  display: flex;
+  flex-direction: column;
+}
+
+.nfaLogo {
+  position: relative;
+  z-index: 5;
+  width: 200px;
+  height: auto;
+  object-fit: contain;
+  object-position: left top;
+}
+
+.brandCopy {
+  position: relative;
+  z-index: 5;
+  margin-top: 130px;
+}
+
+.brandCopy h1 {
+  margin: 0;
+  font-family: 'Poppins', Arial, sans-serif;
+  font-size: clamp(48px, 4vw, 68px);
+  font-weight: 500;
+  line-height: 1.04;
+  letter-spacing: -3px;
+  color: #0C1C34;
+}
+
+.greenRule {
+  width: 91px;
+  height: 6px;
+  margin: 37px 0 34px;
+  background: #6B9A44;
+}
+
+.brandCopy p {
+  margin: 0;
+  color: #7183A4;
+  font-size: 20px;
+  line-height: 1.48;
+}
+
+.brandTag {
+  position: absolute;
+  z-index: 5;
+  left: 70px;
+  bottom: 62px;
+  color: #7183A4;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.65;
+  letter-spacing: 2px;
+}
+
+.greenOrangeShape {
+  position: absolute;
+  z-index: 1;
+  width: 260px;
+  height: 260px;
+  right: -35px;
+  bottom: 188px;
+  border-radius: 140px 0 0 45px;
+  background: linear-gradient(
+    to bottom,
+    #6B9A44 0%,
+    #6B9A44 69%,
+    #E8963A 69%,
+    #E8963A 100%
+  );
+}
+
+.redShape {
+  position: absolute;
+  z-index: 2;
+  right: 220px;
+  bottom: 80px;
+  width: 108px;
+  height: 108px;
+  background: #ED1428;
+}
+
+.blueShape {
+  position: absolute;
+  z-index: 3;
+  right: -183px;
+  bottom: -270px;
+  width: 435px;
+  height: 435px;
+  border-radius: 50%;
+  background: #00649D;
+}
+
+.loginPanel {
+  min-width: 0;
+  min-height: 100vh;
+  padding: 50px 70px 56px;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+}
+
+.help {
+  text-align: right;
+}
+
+.help a {
+  color: #7183A4;
+  font-size: 14px;
+  text-decoration: none;
+}
+
+.formArea {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.formBox {
+  width: 100%;
+  max-width: 550px;
+  transform: translateY(-5px);
+}
+
+.formBox h2 {
+  margin: 0 0 10px;
+  color: #071A33;
+  font-family: 'Poppins', Arial, sans-serif;
+  font-size: 46px;
+  line-height: 1.1;
+  font-weight: 700;
+  letter-spacing: -1.8px;
+}
+
+.intro {
+  margin: 0 0 58px;
+  color: #7183A4;
+  font-size: 16px;
+  line-height: 1.55;
+}
+
+.formBox form > label {
+  display: block;
+  margin: 0 0 12px;
+  color: #071A33;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.field {
+  width: 100%;
+  position: relative;
+}
+
+.field input {
+  width: 100%;
+  height: 55px;
+  padding: 0 48px;
+  border: 1px solid #D7DAE0;
+  border-radius: 0;
+  outline: none;
+  background: #fff;
+  color: #1B2A4A;
+  font-family: 'Inter', Arial, sans-serif;
+  font-size: 15px;
+}
+
+.field input::placeholder {
+  color: #8190AE;
+}
+
+.field input:focus {
+  border-color: #8BA2BB;
+}
+
+.field input.errorInput {
+  border-color: #C0392B;
+}
+
+.fieldIcon {
+  position: absolute;
+  z-index: 2;
+  left: 17px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #7183A4;
+  display: flex;
+}
+
+.eyeButton {
+  position: absolute;
+  z-index: 2;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  padding: 4px;
+  border: 0;
+  background: transparent;
+  color: #7183A4;
+  cursor: pointer;
+}
+
+.fieldError {
+  min-height: 31px;
+  padding-top: 5px;
+  color: #C0392B;
+  font-size: 12px;
+}
+
+.options {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 28px;
+}
+
+.remember {
+  display: flex !important;
+  align-items: center;
+  gap: 9px;
+  margin: 0 !important;
+  color: #071A33 !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  cursor: pointer;
+}
+
+.remember input {
+  width: 19px;
+  height: 19px;
+  margin: 0;
+  accent-color: #00649D;
+}
+
+.options a {
+  color: #008BDF;
+  font-size: 14px;
+  text-decoration: underline;
+}
+
+.signInButton {
+  width: 100%;
+  height: 55px;
+  border: 0;
+  border-radius: 0;
+  background: #00649D;
+  color: white;
+  font-family: 'Inter', Arial, sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.signInButton:hover {
+  background: #00578A;
+}
+
+.signInButton:disabled {
+  opacity: .7;
+  cursor: default;
+}
+
+.authError {
+  margin: -32px 0 22px;
+  padding: 11px 13px;
+  border: 1px solid #E8B8B2;
+  background: #FFF6F5;
+  color: #C0392B;
+  font-size: 13px;
+}
+
+.loginFooter {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 24px;
+  color: #7183A4;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.loginFooter nav {
+  display: flex;
+  gap: 30px;
+}
+
+.loginFooter a {
+  color: #7183A4;
+  text-decoration: none;
+}
+
+@media (max-width: 1000px) {
+  .nfaLogin {
+    grid-template-columns: 1fr;
+  }
+
+  .nfaBrand {
+    display: none;
+  }
+
+  .loginPanel {
+    padding: 32px;
+  }
+
+  .formBox {
+    max-width: 520px;
+  }
+}

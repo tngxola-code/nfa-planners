@@ -1,0 +1,6 @@
+#!/usr/bin/env sh
+
+echo
+echo "Running NFA pre-push quality gate..."
+
+./scripts/quality/pre-push.sh
