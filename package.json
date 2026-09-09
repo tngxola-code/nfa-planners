@@ -21,7 +21,12 @@
     "test:all": "npm test && npm run test:e2e",
     "prepare": "husky",
     "quality:gate": "./scripts/quality/pre-commit.sh",
-    "quality:full": "./scripts/quality/pre-push.sh"
+    "quality:full": "./scripts/quality/pre-push.sh",
+    "lint": "npm run lint:backend && npm run lint:frontend",
+    "lint:backend": "npm --workspace backend run lint",
+    "lint:frontend": "npm --workspace frontend run lint",
+    "typecheck": "npm run typecheck:backend && npm run typecheck:frontend",
+    "build": "npm run build:backend && npm run build:frontend"
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0",
