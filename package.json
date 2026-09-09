@@ -26,7 +26,9 @@
     "lint:backend": "npm --workspace backend run lint",
     "lint:frontend": "npm --workspace frontend run lint",
     "typecheck": "npm run typecheck:backend && npm run typecheck:frontend",
-    "build": "npm run build:backend && npm run build:frontend"
+    "build": "npm run build:backend && npm run build:frontend",
+    "ci:verify": "npm run verify:workspace-contract && npm run lint && npm run typecheck && npm run test && npm run build",
+    "verify:workspace-contract": "node scripts/quality/verify-workspace-contract.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0",

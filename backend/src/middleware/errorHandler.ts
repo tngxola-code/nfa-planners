@@ -4,8 +4,10 @@ export function errorHandler(
   err: Error,
   _req: Request,
   res: Response,
-  _next: NextFunction
+  next: NextFunction
 ) {
+  void next;
+
   console.error('[API ERROR]', err);
 
   const isProduction = process.env.NODE_ENV === 'production';

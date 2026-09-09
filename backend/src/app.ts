@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import swaggerUi from 'swagger-ui-express';
+import swaggerDocument from '../swagger.json';
 
 import apiRoutes from './routes';
 import { errorHandler } from './middleware/errorHandler';
@@ -30,7 +31,6 @@ export function createApp() {
   app.use('/v1', apiRoutes);
 
   if (env.nodeEnv !== 'production') {
-    const swaggerDocument = require('../swagger.json');
     app.use(
       '/api-docs',
       swaggerUi.serve,
