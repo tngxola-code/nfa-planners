@@ -1,0 +1,63 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "NFA Tender Intelligence API",
+    "version": "1.0.0"
+  },
+  "servers": [
+    { "url": "http://localhost:4000/v1" }
+  ],
+  "components": {
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  },
+  "paths": {
+    "/auth/token": {
+      "post": {
+        "summary": "Login",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": { "type": "string" },
+                  "password": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Login successful" },
+          "401": { "description": "Invalid credentials" }
+        }
+      }
+    },
+    "/auth/forgot-password": {
+      "post": {
+        "summary": "Forgot password",
+        "security": [],
+        "responses": {
+          "200": { "description": "Reset link sent" }
+        }
+      }
+    },
+    "/tenants/{id}/members": {
+      "get": {
+        "summary": "Get team members",
+        "security": [{"BearerAuth": []}],
+        "responses": {
+          "200": { "description": "Members list" }
+        }
+      }
+    }
+  }
+}
