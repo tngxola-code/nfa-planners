@@ -1,7 +1,9 @@
-import { createApp } from './app';
-import { env } from './config/env';
+import { createApp } from './app.js';
 
-const app = createApp();
-app.listen(env.port, () => {
-  console.log(`API running on port ${env.port}`);
+const PORT = Number(process.env.PORT ?? 4000);
+
+createApp().then((app) => {
+  app.listen(PORT, () => {
+    console.log(`NFA Console backend listening on http://localhost:${PORT}`);
+  });
 });

@@ -1,44 +1,28 @@
-import express from 'express';
-import cors from 'cors';
-import helmet from 'helmet';
-import swaggerUi from 'swagger-ui-express';
-import swaggerDocument from '../swagger.json';
+import express, { type Express } from 'express';
+import { createMemoryStore, type Store } from './store.js';
+import { AuthService } from './services/authService.js';
+import { UsersService } from './services/usersService.js';
+import { authRouter, authErrorHandler } from './routes/auth.js';
+import { usersRouter, invitesRouter } from './routes/users.js';
 
-import apiRoutes from './routes';
-import { errorHandler } from './middleware/errorHandler';
-import { env } from './config/env';
+export interface AppOptions {
+  store?: Store;
+}
 
-export function createApp() {
+export async function createApp(options: AppOptions = {}): Promise<Express> {
   const app = express();
-
-  app.use(helmet());
-
-  app.use(
-    cors({
-      origin: env.frontendUrl,
-      credentials: true
-    })
-  );
-
   app.use(express.json());
 
-  app.get('/health', (_req, res) => {
-    res.status(200).json({
-      status: 'ok'
-    });
-  });
+  const store = options.store ?? createMemoryStore();
+  await AuthService.seedOwner(store);
+  const authService = new AuthService(store);
+  const usersService = new UsersService(store);
 
-  app.use('/v1', apiRoutes);
-
-  if (env.nodeEnv !== 'production') {
-    app.use(
-      '/api-docs',
-      swaggerUi.serve,
-      swaggerUi.setup(swaggerDocument)
-    );
-  }
-
-  app.use(errorHandler);
+  app.get('/health', (_req, res) => res.json({ ok: true }));
+  app.use('/v1/auth', authRouter(authService));
+  app.use('/v1/users', usersRouter(usersService));
+  app.use('/v1/invites', invitesRouter(usersService));
+  app.use(authErrorHandler);
 
   return app;
 }
