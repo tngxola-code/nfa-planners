@@ -163,3 +163,16 @@ model WorkspaceCard {
   @@index([tenantId, ownerId])
   @@index([tenderId])
 }
+
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String
+  kind      String
+  title     String
+  body      String
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId, createdAt])
+  @@index([userId, readAt])
+}
