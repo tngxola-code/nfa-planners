@@ -6,6 +6,7 @@ import {
   type OcdsRelease,
 } from "../lib/ocds.js";
 import type { IngestStatus } from "../types/tenders.js";
+import type { MatchAlert } from "./alertsService.js";
 
 export type ReleasePage = {
   releases: OcdsRelease[];
@@ -90,6 +91,7 @@ export class IngestService {
   constructor(
     private readonly prisma: PrismaClient,
     private readonly fetcher: ReleaseFetcher = httpFetcher(),
+    private readonly onMatches?: (matches: MatchAlert[]) => Promise<void>,
   ) {}
 
   async run(
@@ -116,6 +118,7 @@ export class IngestService {
     let processed = 0;
     let matched = 0;
     let releaseFailures = 0;
+    const matchedTenders: MatchAlert[] = [];
 
     const releaseErrors: string[] = [];
     const visitedPages = new Set<string>();
@@ -136,6 +139,11 @@ export class IngestService {
 
             if (isMatch(parsed, config)) {
               matched += 1;
+              matchedTenders.push({
+                ocid: parsed.ocid,
+                title: parsed.title,
+                buyer: parsed.buyer,
+              });
             }
 
             const existing = await this.prisma.tender.findUnique({
@@ -238,6 +246,10 @@ export class IngestService {
           finishedAt: new Date(),
         },
       });
+
+      if (matchedTenders.length > 0 && this.onMatches) {
+        await this.onMatches(matchedTenders);
+      }
 
       return { runId: run.id };
     } catch (error) {
