@@ -1,72 +1,68 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { SignJWT } from 'jose';
+import { SignJWT } from "jose";
+import { describe, expect, it } from "vitest";
 
-const TEST_SECRET =
-  'nfa-integration-test-secret-at-least-32-bytes-long';
+import { verifySessionToken } from "../../lib/auth/session";
 
-describe('backend/frontend JWT contract', () => {
-  beforeEach(() => {
-    vi.resetModules();
-    process.env.JWT_SECRET = TEST_SECRET;
-  });
+function getConfiguredSecret(): string {
+  const secret = process.env.JWT_SECRET;
 
-  it('accepts the JWT shape produced by the backend', async () => {
+  if (!secret) {
+    throw new Error("JWT_SECRET must be configured for tests");
+  }
+
+  return secret;
+}
+
+function encodeSecret(secret: string): Uint8Array {
+  return new TextEncoder().encode(secret);
+}
+
+describe("backend/frontend JWT contract", () => {
+  it("accepts the JWT shape produced by the backend", async () => {
     const token = await new SignJWT({
-      userId: '07e1f4b6-bbbc-4b73-8887-9f9193556506',
-      role: 'ADMIN'
+      role: "owner",
+      typ: "access",
     })
-      .setProtectedHeader({ alg: 'HS256' })
+      .setProtectedHeader({ alg: "HS256", typ: "JWT" })
+      .setSubject("07e1f4b6-bbbc-4b73-8887-9f9193556506")
       .setIssuedAt()
-      .setExpirationTime('8h')
-      .sign(new TextEncoder().encode(TEST_SECRET));
-
-    const { verifySessionToken } =
-      await import('../../lib/auth/session');
+      .setExpirationTime("1h")
+      .sign(encodeSecret(getConfiguredSecret()));
 
     const session = await verifySessionToken(token);
 
     expect(session).toEqual({
-      userId: '07e1f4b6-bbbc-4b73-8887-9f9193556506',
-      role: 'ADMIN'
+      userId: "07e1f4b6-bbbc-4b73-8887-9f9193556506",
+      role: "owner",
     });
   });
 
-  it('rejects a JWT signed with another secret', async () => {
+  it("rejects a JWT signed with another secret", async () => {
+    const wrongSecret = `${getConfiguredSecret()}-different`;
+
     const token = await new SignJWT({
-      userId: 'user-123',
-      role: 'ADMIN'
+      role: "owner",
+      typ: "access",
     })
-      .setProtectedHeader({ alg: 'HS256' })
+      .setProtectedHeader({ alg: "HS256", typ: "JWT" })
+      .setSubject("user-123")
       .setIssuedAt()
-      .setExpirationTime('8h')
-      .sign(
-        new TextEncoder().encode(
-          'different-integration-secret-at-least-32-bytes'
-        )
-      );
+      .setExpirationTime("1h")
+      .sign(encodeSecret(wrongSecret));
 
-    const { verifySessionToken } =
-      await import('../../lib/auth/session');
-
-    const session = await verifySessionToken(token);
-
-    expect(session).toBeNull();
+    await expect(verifySessionToken(token)).resolves.toBeNull();
   });
 
-  it('rejects a token missing required claims', async () => {
+  it("rejects a token missing required claims", async () => {
     const token = await new SignJWT({
-      role: 'ADMIN'
+      role: "owner",
+      typ: "access",
     })
-      .setProtectedHeader({ alg: 'HS256' })
+      .setProtectedHeader({ alg: "HS256", typ: "JWT" })
       .setIssuedAt()
-      .setExpirationTime('8h')
-      .sign(new TextEncoder().encode(TEST_SECRET));
+      .setExpirationTime("1h")
+      .sign(encodeSecret(getConfiguredSecret()));
 
-    const { verifySessionToken } =
-      await import('../../lib/auth/session');
-
-    const session = await verifySessionToken(token);
-
-    expect(session).toBeNull();
+    await expect(verifySessionToken(token)).resolves.toBeNull();
   });
 });

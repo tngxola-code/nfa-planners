@@ -1,81 +1,113 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { SESSION_COOKIE_NAME, SESSION_DURATION_SECONDS } from '@/lib/auth';
+import { NextRequest, NextResponse } from "next/server";
+import { SESSION_COOKIE_NAME, SESSION_DURATION_SECONDS } from "@/lib/auth";
+
+interface LoginResponse {
+  accessToken?: unknown;
+  error?: unknown;
+  user?: unknown;
+}
 
 export async function POST(request: NextRequest) {
-  try {
-    const body = await request.json();
-    const { email, password, remember } = body ?? {};
+  let body: unknown;
 
-    if (!email || !password) {
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json(
+      { ok: false, error: "A valid JSON request body is required." },
+      { status: 400 },
+    );
+  }
+
+  try {
+    const { email, password, remember } = body as {
+      email?: unknown;
+      password?: unknown;
+      remember?: unknown;
+    };
+
+    if (
+      typeof email !== "string" ||
+      !email.trim() ||
+      typeof password !== "string" ||
+      !password
+    ) {
       return NextResponse.json(
-        { ok: false, error: 'Email and password are required.' },
-        { status: 400 }
+        { ok: false, error: "Email and password are required." },
+        { status: 400 },
       );
     }
 
-    const backendUrl =
-      process.env.BACKEND_URL ?? 'http://127.0.0.1:4000/v1';
+    const backendUrl = process.env.BACKEND_URL ?? "http://127.0.0.1:4000/v1";
 
     const backendResponse = await fetch(`${backendUrl}/auth/login`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json'
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        email: String(email).trim().toLowerCase(),
-        password
+        email: email.trim().toLowerCase(),
+        password,
       }),
-      cache: 'no-store'
+      cache: "no-store",
     });
 
-    const data = await backendResponse.json().catch(() => ({}));
+    const data = (await backendResponse
+      .json()
+      .catch(() => ({}))) as LoginResponse;
 
     if (!backendResponse.ok) {
       return NextResponse.json(
         {
           ok: false,
           error:
-            data.error ??
-            (backendResponse.status === 401
-              ? 'Invalid credentials.'
-              : 'Authentication failed.')
+            typeof data.error === "string"
+              ? data.error
+              : backendResponse.status === 401
+                ? "Invalid credentials."
+                : "Authentication failed.",
         },
-        { status: backendResponse.status }
+        { status: backendResponse.status },
       );
     }
 
-    const token = data.token;
+    const accessToken =
+      typeof data.accessToken === "string" ? data.accessToken : null;
 
-    if (!token || typeof token !== 'string') {
-      console.error('Backend login succeeded but no token was returned:', data);
+    if (!accessToken) {
+      // Never log the complete response because it may contain tokens.
+      console.error("Backend login succeeded without a valid access token");
 
       return NextResponse.json(
-        { ok: false, error: 'Invalid authentication response.' },
-        { status: 502 }
+        { ok: false, error: "Invalid authentication response." },
+        { status: 502 },
       );
     }
 
     const response = NextResponse.json({
       ok: true,
       user: data.user,
-      returnTo: '/dashboard'
+      returnTo: "/dashboard",
     });
 
-    response.cookies.set(SESSION_COOKIE_NAME, token, {
+    response.cookies.set(SESSION_COOKIE_NAME, accessToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      path: '/',
-      ...(remember ? { maxAge: SESSION_DURATION_SECONDS } : {})
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      ...(remember === true ? { maxAge: SESSION_DURATION_SECONDS } : {}),
     });
 
     return response;
   } catch (error) {
-    console.error('Login proxy error:', error);
+    console.error(
+      "Login proxy error:",
+      error instanceof Error ? error.message : "Unknown error",
+    );
 
     return NextResponse.json(
-      { ok: false, error: 'Authentication service unavailable.' },
-      { status: 503 }
+      { ok: false, error: "Authentication service unavailable." },
+      { status: 503 },
     );
   }
 }
