@@ -10,6 +10,9 @@ import { authRouter, authErrorHandler } from "./routes/auth.js";
 import { usersRouter, invitesRouter } from "./routes/users.js";
 import { tendersRouter } from "./routes/tenders.js";
 import { ingestRouter } from "./routes/ingest.js";
+import { notificationsStreamRouter } from "./routes/notificationsStream.js";
+import { AlertsService } from "./services/alertsService.js";
+import { EventBus } from "./lib/eventBus.js";
 import { notificationsRouter } from "./routes/notifications.js";
 
 export interface AppOptions {
@@ -19,6 +22,9 @@ export interface AppOptions {
 
 export async function createApp(options: AppOptions = {}): Promise<Express> {
   const app = express();
+  const eventBus = new EventBus();
+
+  app.locals.eventBus = eventBus;
 
   app.use(express.json());
 
@@ -43,11 +49,30 @@ export async function createApp(options: AppOptions = {}): Promise<Express> {
    */
   if (options.prisma) {
     const tendersService = new TendersService(options.prisma);
-    const ingestService = new IngestService(options.prisma);
+    const alertsService = new AlertsService(options.prisma, eventBus);
+
+    const ingestService = new IngestService(
+      options.prisma,
+      undefined,
+      async (matches) => {
+        const users = await options.prisma!.user.findMany({
+          where: {
+            status: "active",
+          },
+          select: {
+            id: true,
+          },
+        });
+
+        await alertsService.notifyMatches(users, matches);
+      },
+    );
     const notificationsService = new NotificationsService(options.prisma);
 
     app.use("/v1/tenders", tendersRouter(tendersService));
     app.use("/v1/ingest", ingestRouter(ingestService));
+
+    app.use("/v1/notifications", notificationsStreamRouter(eventBus));
     app.use("/v1/notifications", notificationsRouter(notificationsService));
   }
 
