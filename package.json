@@ -30,7 +30,8 @@
     "ci:verify": "npm run verify:workspace-contract && npm run lint && npm run typecheck && npm run test && npm run build",
     "verify:workspace-contract": "node scripts/quality/verify-workspace-contract.mjs",
     "seed": "npm --workspace backend exec -- tsx src/seed.ts",
-    "postinstall": "DATABASE_URL=\"${DATABASE_URL:-postgresql://ci:ci@127.0.0.1:5432/nfa_console}\" prisma generate"
+    "postinstall": "DATABASE_URL=\"${DATABASE_URL:-postgresql://ci:ci@127.0.0.1:5432/nfa_console}\" prisma generate",
+    "pr:merge-clean": "bash scripts/git/merge-and-cleanup.sh"
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0",
