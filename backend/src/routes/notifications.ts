@@ -3,19 +3,17 @@ import { z } from "zod";
 import { requireAuth, requireRole } from "../middleware/auth.js";
 import { NotificationsService } from "../services/notificationsService.js";
 
-const queryBoolean = z.preprocess((value) => {
-  if (value === "true" || value === true) return true;
-  if (value === "false" || value === false) return false;
-  return value;
-}, z.boolean());
+const booleanQuerySchema = z
+  .enum(["true", "false"])
+  .transform((value) => value === "true");
 
-const listSchema = z.object({
+const listQuerySchema = z.object({
   cursor: z.string().trim().min(1).optional(),
   limit: z.coerce.number().int().min(1).max(100).optional(),
-  unread_only: queryBoolean.optional(),
+  unread_only: booleanQuerySchema.optional(),
 });
 
-const readSchema = z.object({
+const markReadSchema = z.object({
   ids: z.array(z.string().trim().min(1)).max(100).optional(),
 });
 
@@ -30,15 +28,15 @@ export function notificationsRouter(service: NotificationsService): Router {
 
   router.get("/", async (req, res, next) => {
     try {
-      const query = listSchema.parse(req.query);
+      const query = listQuerySchema.parse(req.query);
 
-      res.json(
-        await service.list(req.user!.id, {
-          cursor: query.cursor,
-          limit: query.limit,
-          unreadOnly: query.unread_only,
-        }),
-      );
+      const result = await service.list(req.user!.id, {
+        cursor: query.cursor,
+        limit: query.limit,
+        unreadOnly: query.unread_only,
+      });
+
+      res.json(result);
     } catch (error) {
       next(error);
     }
@@ -46,11 +44,11 @@ export function notificationsRouter(service: NotificationsService): Router {
 
   router.post("/read", async (req, res, next) => {
     try {
-      const { ids } = readSchema.parse(req.body ?? {});
+      const { ids } = markReadSchema.parse(req.body ?? {});
 
-      res.json({
-        updated: await service.markRead(req.user!.id, ids),
-      });
+      const updated = await service.markRead(req.user!.id, ids);
+
+      res.json({ updated });
     } catch (error) {
       next(error);
     }
@@ -59,7 +57,6 @@ export function notificationsRouter(service: NotificationsService): Router {
   router.post("/digest/send", requireRole("owner"), async (req, res, next) => {
     try {
       const { hours } = digestSchema.parse(req.body ?? {});
-
       res.json(await service.sendDigest(hours));
     } catch (error) {
       next(error);

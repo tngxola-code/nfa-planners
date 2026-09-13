@@ -19,6 +19,12 @@ interface NotificationRow {
   createdAt: Date;
 }
 
+interface ListOptions {
+  cursor?: string;
+  limit?: number;
+  unreadOnly?: boolean;
+}
+
 function toDto(notification: NotificationRow): NotificationDto {
   return {
     id: notification.id,
@@ -28,12 +34,6 @@ function toDto(notification: NotificationRow): NotificationDto {
     read: notification.readAt !== null,
     createdAt: notification.createdAt.toISOString(),
   };
-}
-
-export interface NotificationListOptions {
-  cursor?: string;
-  limit?: number;
-  unreadOnly?: boolean;
 }
 
 export class NotificationsService {
@@ -47,8 +47,8 @@ export class NotificationsService {
     kind: NotificationKind,
     title: string,
     body: string,
-  ): Promise<void> {
-    await this.prisma.notification.create({
+  ): Promise<NotificationDto> {
+    const notification = await this.prisma.notification.create({
       data: {
         userId,
         kind,
@@ -56,38 +56,37 @@ export class NotificationsService {
         body,
       },
     });
+
+    return toDto(notification);
   }
 
   async list(
     userId: string,
-    options: NotificationListOptions = {},
+    options: ListOptions = {},
   ): Promise<NotificationList> {
     const limit = Math.min(Math.max(options.limit ?? 20, 1), 100);
 
-    const where = {
-      userId,
-      ...(options.unreadOnly ? { readAt: null } : {}),
-    };
+    const rows = await this.prisma.notification.findMany({
+      where: {
+        userId,
+        ...(options.unreadOnly ? { readAt: null } : {}),
+      },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      ...(options.cursor
+        ? {
+            cursor: { id: options.cursor },
+            skip: 1,
+          }
+        : {}),
+      take: limit + 1,
+    });
 
-    const [rows, unreadCount] = await Promise.all([
-      this.prisma.notification.findMany({
-        where,
-        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
-        take: limit + 1,
-        ...(options.cursor
-          ? {
-              cursor: { id: options.cursor },
-              skip: 1,
-            }
-          : {}),
-      }),
-      this.prisma.notification.count({
-        where: {
-          userId,
-          readAt: null,
-        },
-      }),
-    ]);
+    const unreadCount = await this.prisma.notification.count({
+      where: {
+        userId,
+        readAt: null,
+      },
+    });
 
     const hasMore = rows.length > limit;
     const page = hasMore ? rows.slice(0, limit) : rows;
@@ -95,22 +94,20 @@ export class NotificationsService {
     return {
       data: page.map(toDto),
       unreadCount,
-      nextCursor: hasMore && page.length ? page[page.length - 1].id : null,
+      nextCursor: hasMore && page.length > 0 ? page[page.length - 1].id : null,
     };
   }
 
   async markRead(userId: string, ids?: string[]): Promise<number> {
+    if (ids && ids.length === 0) {
+      return 0;
+    }
+
     const result = await this.prisma.notification.updateMany({
       where: {
         userId,
         readAt: null,
-        ...(ids?.length
-          ? {
-              id: {
-                in: ids,
-              },
-            }
-          : {}),
+        ...(ids ? { id: { in: ids } } : {}),
       },
       data: {
         readAt: new Date(),
@@ -149,14 +146,14 @@ export class NotificationsService {
         take: 20,
       });
 
-      if (!recent.length) continue;
+      if (recent.length === 0) {
+        continue;
+      }
 
-      const { subject, html } = buildDigestEmail(
-        user.name || user.email,
-        recent.map(toDto),
-      );
+      const { subject, html } = buildDigestEmail(user.name, recent.map(toDto));
 
       await this.email.send(user.email, subject, html);
+
       sent += 1;
     }
 
