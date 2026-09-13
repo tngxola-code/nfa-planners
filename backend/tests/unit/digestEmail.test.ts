@@ -6,10 +6,10 @@ function notification(
   overrides: Partial<NotificationDto> = {},
 ): NotificationDto {
   return {
-    id: "notification-1",
+    id: "n1",
     kind: "match",
     title: "New high-match opportunity",
-    body: "Precinct SDF (Tshwane) — 92%",
+    body: "Precinct SDF (Tshwane) - 92%",
     read: false,
     createdAt: "2026-09-13T08:00:00.000Z",
     ...overrides,
@@ -17,22 +17,22 @@ function notification(
 }
 
 describe("escapeHtml", () => {
-  it("escapes HTML metacharacters", () => {
+  it("escapes every supported HTML metacharacter", () => {
     expect(escapeHtml(`<script>"'&`)).toBe("&lt;script&gt;&quot;&#39;&amp;");
   });
 });
 
 describe("buildDigestEmail", () => {
-  it("builds one item per notification", () => {
+  it("builds one list item per notification", () => {
     const { subject, html } = buildDigestEmail("Thandi", [
       notification(),
       notification({
-        id: "notification-2",
+        id: "n2",
         title: "Ingest completed",
       }),
     ]);
 
-    expect(subject).toBe("NFA Console digest — 2 updates");
+    expect(subject).toBe("NFA Console digest - 2 updates");
     expect(html).toContain("Hello Thandi");
     expect(html).toContain("New high-match opportunity");
     expect(html).toContain("Ingest completed");
@@ -40,27 +40,40 @@ describe("buildDigestEmail", () => {
 
   it("uses a singular subject for one notification", () => {
     expect(buildDigestEmail("Sipho", [notification()]).subject).toBe(
-      "NFA Console digest — 1 update",
+      "NFA Console digest - 1 update",
     );
   });
 
-  it("neutralizes feed-controlled HTML", () => {
+  it("escapes feed-controlled titles and bodies", () => {
     const { html } = buildDigestEmail("User", [
       notification({
-        title: "<img src=x onerror=alert(1)>",
+        title: '<img src=x onerror="alert(1)">',
+        body: "<script>alert(2)</script>",
       }),
     ]);
 
     expect(html).not.toContain("<img src=x");
+    expect(html).not.toContain("<script>alert(2)");
     expect(html).toContain("&lt;img");
+    expect(html).toContain("&lt;script&gt;");
   });
 
-  it("escapes the recipient name", () => {
-    const { html } = buildDigestEmail("<script>alert(1)</script>", [
+  it("escapes the recipient display name", () => {
+    const { html } = buildDigestEmail("<script>User</script>", [
       notification(),
     ]);
 
-    expect(html).not.toContain("<script>alert(1)</script>");
-    expect(html).toContain("&lt;script&gt;alert(1)&lt;/script&gt;");
+    expect(html).not.toContain("Hello <script>User</script>");
+    expect(html).toContain("Hello &lt;script&gt;User&lt;/script&gt;");
+  });
+
+  it("handles an invalid notification date", () => {
+    const { html } = buildDigestEmail("User", [
+      notification({
+        createdAt: "invalid-date",
+      }),
+    ]);
+
+    expect(html).toContain("Date unavailable");
   });
 });

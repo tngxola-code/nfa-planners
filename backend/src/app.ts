@@ -14,6 +14,8 @@ import { notificationsStreamRouter } from "./routes/notificationsStream.js";
 import { AlertsService } from "./services/alertsService.js";
 import { EventBus } from "./lib/eventBus.js";
 import { notificationsRouter } from "./routes/notifications.js";
+import { workspaceRouter, workspaceErrorHandler } from "./routes/workspace.js";
+import { WorkspaceService } from "./services/workspaceService.js";
 
 export interface AppOptions {
   store?: Store;
@@ -68,14 +70,17 @@ export async function createApp(options: AppOptions = {}): Promise<Express> {
       },
     );
     const notificationsService = new NotificationsService(options.prisma);
+    const workspaceService = new WorkspaceService(options.prisma);
 
     app.use("/v1/tenders", tendersRouter(tendersService));
     app.use("/v1/ingest", ingestRouter(ingestService));
 
     app.use("/v1/notifications", notificationsStreamRouter(eventBus));
     app.use("/v1/notifications", notificationsRouter(notificationsService));
+    app.use("/v1/workspace", workspaceRouter(workspaceService));
   }
 
+  app.use(workspaceErrorHandler);
   app.use(authErrorHandler);
 
   return app;
