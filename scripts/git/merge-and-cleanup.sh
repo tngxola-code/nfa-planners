@@ -79,22 +79,25 @@ PR_STATE="$(
     --jq '.state'
 )"
 
-[[ "$PR_STATE" == "OPEN" ]] ||
-  fail "Pull request #$PR_NUMBER is not open. Current state: $PR_STATE"
-
 echo "Branch: $CURRENT_BRANCH"
 echo "Pull request: #$PR_NUMBER"
 echo "Target branch: $DEFAULT_BRANCH"
 echo
 
-gh pr checks "$PR_NUMBER" --required
+if [[ "$PR_STATE" == "OPEN" ]]; then
+  gh pr checks "$PR_NUMBER" --required
 
-echo
-echo "Required checks passed. Merging pull request..."
+  echo
+  echo "Required checks passed. Merging pull request..."
 
-gh pr merge "$PR_NUMBER" \
-  --squash \
-  --delete-branch
+  gh pr merge "$PR_NUMBER" \
+    --squash \
+    --delete-branch
+elif [[ "$PR_STATE" == "MERGED" ]]; then
+  echo "Pull request is already merged. Running branch cleanup."
+else
+  fail "Pull request #$PR_NUMBER cannot be cleaned. Current state: $PR_STATE"
+fi
 
 MERGED="$(
   gh pr view "$PR_NUMBER" \
@@ -113,7 +116,7 @@ git pull --ff-only origin "$DEFAULT_BRANCH"
 git fetch origin --prune
 
 if git show-ref --verify --quiet "refs/heads/$CURRENT_BRANCH"; then
-  git branch -d "$CURRENT_BRANCH"
+  git branch -D "$CURRENT_BRANCH"
 fi
 
 if git ls-remote \
