@@ -90,10 +90,9 @@ echo
 
 echo "[3/4] E2E database readiness"
 
-if ! (
-  cd backend
-  DATABASE_URL="$E2E_DATABASE_URL" npx prisma migrate deploy
-); then
+ROOT_DIR="$(git rev-parse --show-toplevel)"
+
+if ! DATABASE_URL="$E2E_DATABASE_URL" npx prisma migrate deploy --config "$ROOT_DIR/prisma.config.ts"; then
   echo
   echo "FAILED"
   echo "E2E database migration failed."
@@ -103,34 +102,7 @@ fi
 
 if ! (
   cd backend
-  DATABASE_URL="$E2E_DATABASE_URL" node <<'NODE'
-const { PrismaClient } = require('@prisma/client');
-
-const prisma = new PrismaClient();
-
-async function main() {
-  const tables = await prisma.$queryRaw`
-    SELECT to_regclass('"public"."User"')::text AS user_table
-  `;
-
-  if (!tables[0]?.user_table) {
-    throw new Error('public.User does not exist');
-  }
-
-  await prisma.user.count();
-
-  console.log('Database schema verification: PASS');
-}
-
-main()
-  .catch(error => {
-    console.error(error.message);
-    process.exitCode = 1;
-  })
-  .finally(async () => {
-    await prisma.$disconnect();
-  });
-NODE
+  DATABASE_URL="$E2E_DATABASE_URL" npx tsx src/checkDb.ts
 ); then
   echo
   echo "FAILED"
@@ -153,9 +125,3 @@ if ! npm run test:e2e; then
 fi
 
 echo "PASS"
-
-echo
-echo "-------------------------------------------"
-echo "PRE-PUSH QUALITY GATE PASSED"
-echo "Push allowed."
-echo "-------------------------------------------"

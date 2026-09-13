@@ -1,38 +1,39 @@
-import { beforeAll, describe, expect, it } from 'vitest';
-import { SignJWT } from 'jose';
+import { SignJWT } from "jose";
+import { describe, expect, it } from "vitest";
 
-const secret = 'test-secret-that-is-long-enough-for-tests';
+import { verifySessionToken } from "../../lib/auth/session";
 
-beforeAll(() => {
-  process.env.JWT_SECRET = secret;
-});
+function getTestSecret(): Uint8Array {
+  const secret = process.env.JWT_SECRET;
 
-describe('verifySessionToken', () => {
-  it('accepts a valid backend-style JWT', async () => {
+  if (!secret) {
+    throw new Error("JWT_SECRET must be configured for tests");
+  }
+
+  return new TextEncoder().encode(secret);
+}
+
+describe("verifySessionToken", () => {
+  it("accepts a valid backend-style JWT", async () => {
     const token = await new SignJWT({
-      userId: 'user-123',
-      role: 'ADMIN'
+      role: "owner",
+      typ: "access",
     })
-      .setProtectedHeader({ alg: 'HS256' })
+      .setProtectedHeader({ alg: "HS256" })
+      .setSubject("user-123")
       .setIssuedAt()
-      .setExpirationTime('1h')
-      .sign(new TextEncoder().encode(secret));
-
-    const { verifySessionToken } = await import('@/lib/auth/session');
+      .setExpirationTime("1h")
+      .sign(getTestSecret());
 
     const session = await verifySessionToken(token);
 
     expect(session).toEqual({
-      userId: 'user-123',
-      role: 'ADMIN'
+      userId: "user-123",
+      role: "owner",
     });
   });
 
-  it('rejects invalid JWTs', async () => {
-    const { verifySessionToken } = await import('@/lib/auth/session');
-
-    const session = await verifySessionToken('invalid.token.value');
-
-    expect(session).toBeNull();
+  it("rejects invalid JWTs", async () => {
+    await expect(verifySessionToken("not-a-valid-jwt")).resolves.toBeNull();
   });
 });

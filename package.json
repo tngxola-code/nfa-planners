@@ -28,10 +28,17 @@
     "typecheck": "npm run typecheck:backend && npm run typecheck:frontend",
     "build": "npm run build:backend && npm run build:frontend",
     "ci:verify": "npm run verify:workspace-contract && npm run lint && npm run typecheck && npm run test && npm run build",
-    "verify:workspace-contract": "node scripts/quality/verify-workspace-contract.mjs"
+    "verify:workspace-contract": "node scripts/quality/verify-workspace-contract.mjs",
+    "seed": "npm --workspace backend exec -- tsx src/seed.ts",
+    "postinstall": "DATABASE_URL=\"${DATABASE_URL:-postgresql://ci:ci@127.0.0.1:5432/nfa_console}\" prisma generate"
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0",
-    "husky": "^9.1.7"
+    "husky": "^9.1.7",
+    "prisma": "^7.10.0"
+  },
+  "dependencies": {
+    "@prisma/client": "^7.10.0",
+    "dotenv": "^17.4.2"
   }
 }
