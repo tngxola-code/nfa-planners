@@ -71,3 +71,95 @@ model Invite {
 
   tenant Tenant? @relation(fields: [tenantId], references: [id])
 }
+
+model Tender {
+  id                 String    @id @default(cuid())
+  ocid               String    @unique
+  source             String    @default("etenders")
+  sourceReleaseId    String?
+  title              String
+  buyer              String
+  province           String?
+  category           String?
+  valueZar           Decimal?  @db.Decimal(18, 2)
+  description        String?
+  compulsoryBriefing Boolean   @default(false)
+  briefingAt         DateTime?
+  briefingVenue      String?
+  publishedAt        DateTime?
+  closingAt          DateTime?
+  awardedAt          DateTime?
+  cancelledAt        DateTime?
+  sourceUpdatedAt    DateTime?
+  lastIngestedAt     DateTime  @default(now())
+  raw                Json?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  documents      TenderDocument[]
+  workspaceCards WorkspaceCard[]
+
+  @@index([publishedAt])
+  @@index([closingAt, id])
+  @@index([buyer])
+  @@index([province])
+  @@index([category])
+  @@index([source, sourceUpdatedAt])
+}
+
+model TenderDocument {
+  id               String    @id @default(cuid())
+  tenderId         String
+  sourceDocumentId String?
+  name             String
+  docType          String?
+  url              String
+  sizeBytes        Int?
+  publishedAt      DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  tender Tender @relation(fields: [tenderId], references: [id], onDelete: Cascade)
+
+  @@unique([tenderId, url])
+  @@index([tenderId])
+  @@index([sourceDocumentId])
+}
+
+model IngestRun {
+  id                String    @id @default(cuid())
+  source            String    @default("etenders")
+  status            String    @default("running")
+  cursor            String?
+  releasesProcessed Int       @default(0)
+  createdCount      Int       @default(0)
+  updatedCount      Int       @default(0)
+  matchedCount      Int       @default(0)
+  skippedCount      Int       @default(0)
+  failedCount       Int       @default(0)
+  errorSummary      String?
+  startedAt         DateTime  @default(now())
+  finishedAt        DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([source, startedAt])
+  @@index([status, startedAt])
+}
+
+model WorkspaceCard {
+  id        String   @id @default(cuid())
+  tenantId  String
+  tenderId  String
+  stage     String   @default("new")
+  ownerId   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tender Tender @relation(fields: [tenderId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, tenderId])
+  @@index([tenantId, stage])
+  @@index([tenantId, ownerId])
+  @@index([tenderId])
+}

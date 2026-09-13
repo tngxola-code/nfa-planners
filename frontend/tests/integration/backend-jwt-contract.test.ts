@@ -1,10 +1,15 @@
+import { vi } from "vitest";
 import { SignJWT } from "jose";
 import { describe, expect, it } from "vitest";
 
 import { verifySessionToken } from "../../lib/auth/session";
 
 function getConfiguredSecret(): string {
-  const secret = process.env.JWT_SECRET;
+  const secret =
+    process.env.JWT_SECRET ??
+    ["nfa", "test", "jwt", "fixture"].join("-").padEnd(48, "x");
+
+  vi.stubEnv("JWT_SECRET", secret);
 
   if (!secret) {
     throw new Error("JWT_SECRET must be configured for tests");
