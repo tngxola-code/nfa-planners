@@ -42,8 +42,9 @@ model Tenant {
   name      String
   createdAt DateTime @default(now())
 
-  members Member[]
-  invites Invite[]
+  members        Member[]
+  invites        Invite[]
+  vaultDocuments VaultDocument[]
 }
 
 model Member {
@@ -158,6 +159,10 @@ model WorkspaceCard {
 
   tender Tender @relation(fields: [tenderId], references: [id], onDelete: Cascade)
 
+  requirements    Requirement[]
+  tasks           BidTask[]
+  submissionPacks SubmissionPack[]
+
   @@unique([tenantId, tenderId])
   @@index([tenantId, stage])
   @@index([tenantId, ownerId])
@@ -175,4 +180,80 @@ model Notification {
 
   @@index([userId, createdAt])
   @@index([userId, readAt])
+}
+
+model Requirement {
+  id        String   @id @default(cuid())
+  cardId    String
+  name      String
+  detail    String?
+  status    String   @default("missing")
+  ownerId   String?
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  card WorkspaceCard @relation(fields: [cardId], references: [id], onDelete: Cascade)
+
+  @@unique([cardId, name])
+  @@index([cardId, sortOrder])
+  @@index([cardId, status])
+  @@index([ownerId])
+}
+
+model VaultDocument {
+  id          String    @id @default(cuid())
+  tenantId    String
+  category    String
+  name        String
+  ext         String?
+  contentType String?
+  status      String    @default("valid")
+  expiresAt   DateTime?
+  version     String    @default("v1")
+  sizeBytes   Int?
+  storageKey  String
+  uploadedBy  String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, storageKey])
+  @@index([tenantId, category])
+  @@index([tenantId, expiresAt])
+  @@index([tenantId, status])
+  @@index([uploadedBy])
+}
+
+model BidTask {
+  id        String    @id @default(cuid())
+  cardId    String
+  title     String
+  done      Boolean   @default(false)
+  ownerId   String?
+  due       DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  card WorkspaceCard @relation(fields: [cardId], references: [id], onDelete: Cascade)
+
+  @@index([cardId, createdAt])
+  @@index([cardId, done])
+  @@index([ownerId])
+}
+
+model SubmissionPack {
+  id          String   @id @default(cuid())
+  cardId      String
+  status      String   @default("draft")
+  manifest    Json
+  generatedBy String
+  createdAt   DateTime @default(now())
+
+  card WorkspaceCard @relation(fields: [cardId], references: [id], onDelete: Cascade)
+
+  @@index([cardId, createdAt])
+  @@index([cardId, status])
+  @@index([generatedBy])
 }
