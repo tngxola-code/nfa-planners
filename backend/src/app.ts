@@ -17,6 +17,11 @@ import { notificationsRouter } from "./routes/notifications.js";
 import { workspaceRouter, workspaceErrorHandler } from "./routes/workspace.js";
 import { WorkspaceService } from "./services/workspaceService.js";
 import { ComplianceService } from "./services/complianceService.js";
+import { AiReviewService } from "./services/aiReviewService.js";
+import {
+  aiReviewErrorHandler,
+  aiReviewRouter,
+} from "./routes/aiReview.js";
 import {
   complianceErrorHandler,
   complianceRouter,
@@ -77,6 +82,9 @@ export async function createApp(options: AppOptions = {}): Promise<Express> {
     const notificationsService = new NotificationsService(options.prisma);
     const workspaceService = new WorkspaceService(options.prisma);
     const complianceService = new ComplianceService(options.prisma);
+    const aiReviewService = new AiReviewService(
+      options.prisma,
+    );
 
     app.use("/v1/tenders", tendersRouter(tendersService));
     app.use("/v1/ingest", ingestRouter(ingestService));
@@ -85,10 +93,12 @@ export async function createApp(options: AppOptions = {}): Promise<Express> {
     app.use("/v1/notifications", notificationsRouter(notificationsService));
     app.use("/v1/workspace", workspaceRouter(workspaceService));
     app.use("/v1", complianceRouter(complianceService));
+    app.use("/v1", aiReviewRouter(aiReviewService));
   }
 
   app.use(workspaceErrorHandler);
   app.use(complianceErrorHandler);
+  app.use(aiReviewErrorHandler);
   app.use(authErrorHandler);
 
   return app;
