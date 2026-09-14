@@ -45,6 +45,7 @@ model Tenant {
   members        Member[]
   invites        Invite[]
   vaultDocuments VaultDocument[]
+  wallet         Wallet?
 }
 
 model Member {
@@ -282,4 +283,41 @@ model AiReviewJob {
   @@index([tenantId, status, createdAt])
   @@index([cardId])
   @@index([requestedBy])
+}
+
+model Wallet {
+  id                String   @id @default(cuid())
+  tenantId          String   @unique
+  balance           Int      @default(0)
+  lifetimePurchased Int      @default(0)
+  lifetimeUsed      Int      @default(0)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  tenant       Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  transactions WalletTransaction[]
+
+  @@index([tenantId, updatedAt])
+}
+
+model WalletTransaction {
+  id             String   @id @default(cuid())
+  walletId       String
+  tenantId       String
+  actorId        String
+  type           String
+  description    String
+  credits        Int
+  balanceAfter   Int
+  status         String   @default("completed")
+  idempotencyKey String
+  createdAt      DateTime @default(now())
+
+  wallet Wallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, idempotencyKey])
+  @@index([walletId, createdAt])
+  @@index([tenantId, createdAt])
+  @@index([tenantId, type, createdAt])
+  @@index([actorId, createdAt])
 }
